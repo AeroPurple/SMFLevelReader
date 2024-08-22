@@ -75,6 +75,7 @@ def configLoad():
     except:
         configSave(programVersion,62,2)
         configFile=open(os.path.join(sys.path[0], 'Settings.cfg'),mode='rb')
+        print("First time? Type in 'help' to get the list of commands, or type in 'settings' to change how this program works.")
     finally:
         try:
             configData=configFile.read()
@@ -180,6 +181,7 @@ def generalHelp(command):
     if command=="":
         print("\033[1mSMF Level Reader v"+versionNames[programVersion]+"\nReleased on 22 Aug 2024 by AeroPurple\033[0m\n")
         print("Available commands:\n\u001b[33mopen | o\nexport | exp | e\nimport | imp | i\nsettings | set | s\nreplace | rep | r\nheader | head | h\nhelp | ?\nexit | x\033[0m")
+        print("\nType in \u001b[33mhelp\033[0m \033[1m[command]\033[0m | \u001b[33m?\033[0m \033[1m[command]\033[0m to learn more about how each command works.")
     elif command[:4]=="open" or command[:1]=="o":
         print("\033[1mOpen Command\033[0m")
         print("This command opens up a File Explorer dialogue and allows you to select a file. This file is then automatically parsed and can be edited.")

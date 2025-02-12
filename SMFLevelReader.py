@@ -12,10 +12,87 @@ import time
 import re
 import shutil
 from sys import exit
+from subprocess import call
+
+def get_application_path():
+    if hasattr(sys, 'frozen'):
+        return os.path.dirname(sys.executable)
+    else:
+        return os.path.dirname(__file__)
+
+useANSI=1
+ANSICodes={
+    0:["","","","","","","","","","","","","","","","","","","",""],
+    1:["\033[0m","\033[1m","\x1B[3m","\x1B[4m","\033[30m","\033[31m","\033[32m","\033[33m","\033[34m","\033[35m","\033[36m","\033[37m","\033[90m","\033[91m","\033[92m","\033[93m","\033[94m","\033[95m","\033[96m","\033[97m"]
+}
+
+colorScheme={
+    "default":"",
+    "bold":"",
+    "error":"",
+    "warning":"",
+    "success":"",
+    "link":"",
+    "null":"",
+    "typeerror":"",
+    "command":"",
+    "subcommand":"",
+    "section":"",
+    "value":"",
+    "typeinvalid":""
+}
+
+def defineColors():
+    global colorScheme
+    
+    DEFAULT=ANSICodes[useANSI][0]
+    BOLD=ANSICodes[useANSI][1]
+    ITALIC=ANSICodes[useANSI][2]
+    UNDERLINE=ANSICodes[useANSI][3]
+    DIM_BLACK=ANSICodes[useANSI][4]
+    DIM_RED=ANSICodes[useANSI][5]
+    DIM_GREEN=ANSICodes[useANSI][6]
+    DIM_YELLOW=ANSICodes[useANSI][7]
+    DIM_BLUE=ANSICodes[useANSI][8]
+    DIM_MAGENTA=ANSICodes[useANSI][9]
+    DIM_CYAN=ANSICodes[useANSI][10]
+    DIM_WHITE=ANSICodes[useANSI][11]
+    BLACK=ANSICodes[useANSI][12]
+    RED=ANSICodes[useANSI][13]
+    GREEN=ANSICodes[useANSI][14]
+    YELLOW=ANSICodes[useANSI][15]
+    BLUE=ANSICodes[useANSI][16]
+    MAGENTA=ANSICodes[useANSI][17]
+    CYAN=ANSICodes[useANSI][18]
+    WHITE=ANSICodes[useANSI][19]
+
+    colorScheme={
+        "default":DEFAULT,
+        "bold":BOLD,
+        "error":RED, # used to be DIM_RED
+        "warning":YELLOW, # used to be DIM_YELLOW
+        "success":GREEN,
+        "link":BLUE+UNDERLINE, # used to be DIM_CYAN
+        "null":BLACK, # used to be ITALIC
+        "typeerror":DIM_YELLOW, # used to be ITALIC
+        "command":YELLOW,
+        "subcommand":BOLD,
+        "section":DEFAULT,
+        "value":CYAN,
+        "typeinvalid":DIM_RED
+    }
+
 try:
     import curses
 except:
-    print("\033[31mNo Curses module installed.\033[0m\nPlease install it using the \033[1mpip install curses\033[0m command.")
+    print(colorScheme["error"]+"No Curses module installed."+colorScheme["default"])
+    print("Please install it using the "+colorScheme["bold"]+"pip install curses"+colorScheme["default"]+" command.")
+
+try:
+    import keyboard
+except:
+    print(colorScheme["error"]+"No Keyboard module installed."+colorScheme["default"])
+    print("Please install it using the "+colorScheme["bold"]+"pip install keyboard"+colorScheme["default"]+" command.")
 
 titleScreenWaitTime=0
 decorType=0
@@ -26,42 +103,52 @@ except:
     screenx=80
     screeny=25
     
-    try:
-        console=curses.initscr()
-        console.clear()
-        console.addstr(0,0,"".center(screenx,"─"))
-        console.addstr(screeny-1,0,"".center(screenx,"─"))
-        for i in range (screeny-2):
-            console.addstr(i+1,0,"│")
-        for i in range (screeny-2):
-            console.addstr(i+1,screenx-1,"│")
-        console.addstr(0,0,"┌")
-        console.addstr(0,screenx-1,"┐")
-        console.addstr(screeny-1,0,"└")
-        console.addstr(screeny-1,screenx-1,"┘")
-        console.addstr(2,2,"Console size was not detected.")
-        console.addstr(4,2,"A default size of 80x25 will be used, as represented by this box.")
-        console.addstr(6,2,"Please resize your console so that this box fits neatly in it.")
-        console.addstr(8,2,"Press any key when you're ready.")
-        console.refresh()
-        console.getch()
-        curses.endwin()
-    except:
-        print("\033[31mCurrent console environment does not support Curses.\nAlong with this, the console size was not detected and was set to the default 80x25 size.\033[0m")
+    output="┌"
+    for i in range (screenx-2):
+        output+="─"
+    output+="┐"
+    print(output)
+    output="│"
+    for i in range (screenx-2):
+        output+=" "
+    output+="│"
+    for i in range (screeny-2):
+        print(output)
+    output="└"
+    for i in range (screenx-2):
+        output+="─"
+    output+="┘"
+    print(output)
 
-versionNames=[0,"0.9"]
+def clear():
+    if os.name == 'nt':
+        os.system('cls')
+    else:
+        os.system('clear')
+    for i in range(screeny): # Windows Terminal force wipe
+        output=""
+        for j in range(screenx):
+            output+=" "
+        print(output)
+    if os.name == 'nt':
+        os.system('cls')
+    else:
+        os.system('clear')
+
+versionNames=[0,"0.9","0.10 Beta"]
 configVersion=0
-programVersion=1
+programVersion=2
+firstRun=False
 
 decorTypes=[" ","─","━","═"]
 
-def convertToConfigData(versionIndex,waitTime,decorType):
-    return (versionIndex<<8|waitTime)<<2|decorType
+def convertToConfigData(versionIndex,waitTime,decorType,useANSI):
+    return (((versionIndex<<8|waitTime)<<2|decorType)<<1|(useANSI))<<7
     
-def configSave(versionIndex,waitTime,decorType):
-    configData=convertToConfigData(versionIndex,waitTime,decorType)
-    configData=configData.to_bytes(2,'big')
-    configFile=open(os.path.join(sys.path[0], 'Settings.cfg'),mode='wb')
+def configSave(versionIndex,waitTime,decorType,useANSI):
+    configData=convertToConfigData(versionIndex,waitTime,decorType,useANSI)
+    configData=configData.to_bytes(3,'big')
+    configFile=open(os.path.join(get_application_path(), 'Settings.cfg'),mode='wb')
     configFile.write(configData)
     configFile.close()
 
@@ -69,54 +156,67 @@ def configLoad():
     global configVersion
     global titleScreenWaitTime
     global decorType
+    global useANSI
+    global firstRun
     
     try:
-        configFile=open(os.path.join(sys.path[0], 'Settings.cfg'),mode='rb')
+        configFile=open(os.path.join(get_application_path(), 'Settings.cfg'),mode='rb')
     except:
-        configSave(programVersion,62,2)
-        configFile=open(os.path.join(sys.path[0], 'Settings.cfg'),mode='rb')
-        print("First time? Type in 'help' to get the list of commands, or type in 'settings' to change how this program works.")
+        configSave(programVersion,62,2,1)
+        configFile=open(os.path.join(get_application_path(), 'Settings.cfg'),mode='rb')
+        firstRun=True
     finally:
         try:
             configData=configFile.read()
-            configData=bin(int.from_bytes(configData,'big'))[2:].zfill(16)
-            configVersion=int(configData[:6],2)
+            if int((bin(int.from_bytes(configData,'big'))[2:].zfill(16))[:6],2)==1:
+                configVersion=1
+                configData=bin(int.from_bytes(configData,'big'))[2:].zfill(16)
+            else:
+                configData=bin(int.from_bytes(configData,'big'))[2:].zfill(24)
+                configVersion=int(configData[:6],2)
             if configVersion+1>len(versionNames) or versionNames[configVersion]==0:
                 print("Configuration file may be invalid.")
             titleScreenWaitTime=int(configData[6:14],2)
             decorType=int(configData[14:16],2)
+            useANSI=int(configData[16:17])
             configFile.close()
         except:
-            configSave(programVersion,62,2)
+            configSave(programVersion,62,2,1)
         
 def changeConfig():
+    configLoad()
+    
     global titleScreenWaitTime
     global decorType
+    global useANSI
     
     try:
         console=curses.initscr()
     except:
-        print("\033[31mCurrent console environment does not support Curses.\033[0m")
+        print(colorScheme["error"]+"Current console environment does not support Curses."+colorScheme["default"])
         return
+    curses.noecho()
+    curses.cbreak()
     console.keypad(True)
     console.clear()
     if decorType!=0:
         console.addstr(0,0," Settings ".center(screenx,decorTypes[decorType]))
     else:
         console.addstr(0,0,"Settings")
-    if versionNames[configVersion]==0:
+    if configVersion+1>len(versionNames):
+        console.addstr(1,0,f"Reported config version: Unknown [{configVersion}]")
+    elif versionNames[configVersion]==0:
         console.addstr(1,0,"Reported config version: Invalid")
-    elif configVersion+1>len(versionNames):
-        console.addstr(1,0,"Reported config version: Unknown")
     else:
         console.addstr(1,0,"Reported config version: "+versionNames[configVersion])
     console.addstr(2,0,"Title screen halt (ms): ◄    ►")
     console.addstr(3,0,"Title padding style: ◄    ►")
-    console.addstr(5,0,"[Reset All]")
-    console.addstr(6,0,"[Cancel]")
-    console.addstr(7,0,"[Save]")
-    current_item=0
-    old_data=[titleScreenWaitTime,decorType]
+    console.addstr(4,0,"Use ANSI escape codes: ◄   ►")
+    console.addstr(6,0,"[Reset All]")
+    console.addstr(7,0,"[Cancel]")
+    console.addstr(8,0,"[Save]")
+    current_item=-1
+    old_data=[titleScreenWaitTime,decorType,useANSI]
     temp_new=0
     while True:
         console.addstr(2,25,str(titleScreenWaitTime*16).rjust(4))
@@ -124,9 +224,13 @@ def changeConfig():
             console.addstr(3,22,"None")
         else:
             console.addstr(3,22,"".center(4,decorTypes[decorType]))
-        console.addstr(5,1,"Reset All")
-        console.addstr(6,1,"Cancel")
-        console.addstr(7,1,"Save")
+        if useANSI==0:
+            console.addstr(4,24,"No".rjust(3))
+        elif useANSI==1:
+            console.addstr(4,24,"Yes".rjust(3))
+        console.addstr(6,1,"Reset All")
+        console.addstr(7,1,"Cancel")
+        console.addstr(8,1,"Save")
         if current_item==0:
             console.addstr(2,25,str(titleScreenWaitTime*16).rjust(4),curses.A_REVERSE)
         elif current_item==1:
@@ -134,34 +238,40 @@ def changeConfig():
                 console.addstr(3,22,"None",curses.A_REVERSE)
             else:
                 console.addstr(3,22,"".center(4,decorTypes[decorType]),curses.A_REVERSE)
-        elif current_item==2:
-            console.addstr(5,1,"Reset All",curses.A_REVERSE)
+        elif current_item==2:          
+            if useANSI==0:
+                console.addstr(4,24,"No".rjust(3),curses.A_REVERSE)
+            elif useANSI==1:
+                console.addstr(4,24,"Yes".rjust(3),curses.A_REVERSE)
         elif current_item==3:
-            console.addstr(6,1,"Cancel",curses.A_REVERSE)
+            console.addstr(6,1,"Reset All",curses.A_REVERSE)
         elif current_item==4:
-            console.addstr(7,1,"Save",curses.A_REVERSE)
+            console.addstr(7,1,"Cancel",curses.A_REVERSE)
+        elif current_item==5:
+            console.addstr(8,1,"Save",curses.A_REVERSE)
         console.refresh()
         key=console.getch()
         #console.addstr(11,0,str(key)+"   ")
         console.refresh()
         if key==10: # Enter
-            if current_item<2:
-                current_item=(current_item+1)%5
+            if current_item<3:
+                current_item=(current_item+1)%6
             else:
-                if current_item==2:
-                    titleScreenWaitTime,decorType=[62,2]
-                    configSave(programVersion,titleScreenWaitTime,decorType)
-                elif current_item==3:
-                    titleScreenWaitTime,decorType=old_data
+                if current_item==3:
+                    titleScreenWaitTime,decorType,useANSI=[62,2,1]
+                    configSave(programVersion,titleScreenWaitTime,decorType,useANSI)
                 elif current_item==4:
-                    configSave(programVersion,titleScreenWaitTime,decorType)
+                    titleScreenWaitTime,decorType,useANSI=old_data
+                elif current_item==5:
+                    configSave(programVersion,titleScreenWaitTime,decorType,useANSI)
+                defineColors()
                 curses.endwin()
                 print("Exited settings page.")
                 return
         elif key==curses.KEY_DOWN:
-            current_item=(current_item+1)%5
+            current_item=(current_item+1)%6
         elif key==curses.KEY_UP:
-            current_item=(current_item-1)%5
+            current_item=(current_item-1)%6
         elif key==curses.KEY_LEFT:
             if current_item==0:
                 if titleScreenWaitTime>0:
@@ -169,6 +279,8 @@ def changeConfig():
             elif current_item==1:
                 if decorType>0:
                     decorType-=1
+            elif current_item==2:
+                useANSI=(useANSI-1)%2
         elif key==curses.KEY_RIGHT:
             if current_item==0:
                 if titleScreenWaitTime<255:
@@ -176,62 +288,64 @@ def changeConfig():
             elif current_item==1:
                 if decorType<3:
                     decorType+=1
+            elif current_item==2:
+                useANSI=(useANSI+1)%2
 
 def generalHelp(command):
     if command=="":
-        print("\033[1mSMF Level Reader v"+versionNames[programVersion]+"\nReleased on 22 Aug 2024 by AeroPurple\033[0m\n")
-        print("Available commands:\n\u001b[33mopen | o\nexport | exp | e\nimport | imp | i\nsettings | set | s\nreplace | rep | r\nheader | head | h\nhelp | ?\nexit | x\033[0m")
-        print("\nType in \u001b[33mhelp\033[0m \033[1m[command]\033[0m | \u001b[33m?\033[0m \033[1m[command]\033[0m to learn more about how each command works.")
+        print(colorScheme["bold"]+"SMF Level Reader v"+versionNames[programVersion]+"\nReleased on 11 Feb 2025 by AeroPurple"+colorScheme["default"]+"\n")
+        print("Available commands:\n"+colorScheme["command"]+"open | o\nexport | exp | e\nimport | imp | i\nsettings | set | s\nreplace | rep | r\nheader | head | h\nhelp | ?\nexit | x"+colorScheme["default"])
+        print("\nType in "+colorScheme["command"]+"help"+colorScheme["default"]+" "+colorScheme["bold"]+"[command]"+colorScheme["default"]+" | "+colorScheme["command"]+"?"+colorScheme["default"]+" "+colorScheme["bold"]+"[command]"+colorScheme["default"]+" to learn more about how each command works.")
     elif command[:4]=="open" or command[:1]=="o":
-        print("\033[1mOpen Command\033[0m")
+        print(colorScheme["bold"]+"Open Command"+colorScheme["default"])
         print("This command opens up a File Explorer dialogue and allows you to select a file. This file is then automatically parsed and can be edited.")
-        print("\n\033[1mSyntax\033[0m")
-        print("\u001b[33mopen\033[0m")
-        print("\u001b[33mo\033[0m")
+        print("\n"+colorScheme["bold"]+"Syntax"+colorScheme["default"])
+        print(colorScheme["command"]+"open"+colorScheme["default"])
+        print(colorScheme["command"]+"o"+colorScheme["default"])
     elif command[:6]=="export" or command[:3]=="exp" or command[:1]=="e":
-        print("\033[1mExport Command\033[0m")
+        print(colorScheme["bold"]+"Export Command"+colorScheme["default"])
         print("This command exports an opened Super Mario Flash level to your desired format, such as Comma Separated Values (can be edited in Excel), the original SMF text format, or an experimental text format that contains a visual representation of level tiles.")
-        print("\n\033[1mSyntax\033[0m")
-        print("\u001b[33mexport\033[0m \033[1m[format]\033[0m")
-        print("\u001b[33mexp\033[0m \033[1m[format]\033[0m")
-        print("\u001b[33me\033[0m \033[1m[format]\033[0m")
-        print("\n\033[1mAccepted Values\033[0m")
+        print("\n"+colorScheme["bold"]+"Syntax"+colorScheme["default"])
+        print(colorScheme["command"]+"export"+colorScheme["default"]+" "+colorScheme["bold"]+"[format]"+colorScheme["default"])
+        print(colorScheme["command"]+"exp"+colorScheme["default"]+" "+colorScheme["bold"]+"[format]"+colorScheme["default"])
+        print(colorScheme["command"]+"e"+colorScheme["default"]+" "+colorScheme["bold"]+"[format]"+colorScheme["default"])
+        print("\n"+colorScheme["bold"]+"Accepted Values"+colorScheme["default"])
         print("csv | txt | map")
     elif command[:6]=="import" or command[:3]=="imp" or command[:1]=="i":
-        print("\033[1mImport Command\033[0m")
+        print(colorScheme["bold"]+"Import Command"+colorScheme["default"])
         print("This command replaces specified tiles with a Comma Seperated Values (CSV) file.")
-        print("\n\033[1mSyntax\033[0m")
-        print("\u001b[33mimport\033[0m \033[1m[type of tile data]\033[0m")
-        print("\u001b[33mimp\033[0m \033[1m[type of tile data]\033[0m")
-        print("\u001b[33mi\033[0m \033[1m[type of tile data]\033[0m")
-        print("\n\033[1mAccepted Values\033[0m")
+        print("\n"+colorScheme["bold"]+"Syntax"+colorScheme["default"])
+        print(colorScheme["command"]+"import"+colorScheme["default"]+" "+colorScheme["bold"]+"[type of tile data]"+colorScheme["default"])
+        print(colorScheme["command"]+"imp"+colorScheme["default"]+" "+colorScheme["bold"]+"[type of tile data]"+colorScheme["default"])
+        print(colorScheme["command"]+"i"+colorScheme["default"]+" "+colorScheme["bold"]+"[type of tile data]"+colorScheme["default"])
+        print("\n"+colorScheme["bold"]+"Accepted Values"+colorScheme["default"])
         print("level | lvl | l\nbonus | bns | b\nlayer 1 | layer1 | l1\nlayer 2 | layer2 | l2")
     elif command[:6]=="settings" or command[:3]=="set" or command[:1]=="s":
-        print("\033[1mSettings Command\033[0m")
+        print(colorScheme["bold"]+"Settings Command"+colorScheme["default"])
         print("This command opens a Curses interface that allows you to customize how the program functions and looks.")
-        print("\n\033[1mSyntax\033[0m")
-        print("\u001b[33msettings\033[0m")
-        print("\u001b[33mset\033[0m")
-        print("\u001b[33ms\033[0m")
+        print("\n"+colorScheme["bold"]+"Syntax"+colorScheme["default"])
+        print(colorScheme["command"]+"settings"+colorScheme["default"])
+        print(colorScheme["command"]+"set"+colorScheme["default"])
+        print(colorScheme["command"]+"s"+colorScheme["default"])
     elif command[:7]=="replace" or command[:3]=="rep" or command[:1]=="r":
-        print("\033[1mReplace Command\033[0m")
+        print(colorScheme["bold"]+"Replace Command"+colorScheme["default"])
         print("This command replaces various variables in the current level.")
-        print("\n\033[1mSyntax\033[0m")
-        print("\u001b[33mreplace\033[0m \033[1mheader [variable or command] [new value]\033[0m")
-        print("\u001b[33mreplace\033[0m \033[1mwarp/entrance/exit [warp sublevel and number or command] [variable or command] [new value]\033[0m")
-        print("\u001b[33mreplace\033[0m \033[1mtiles [type of tile data] [tile selection] [new value]\033[0m")
-        print("\u001b[33mrep\033[0m \033[1mheader [variable or command]  [new value]\033[0m")
-        print("\u001b[33mrep\033[0m \033[1mwarp/entrance/exit [warp sublevel and number or command] [variable or command] [new value]\033[0m")
-        print("\u001b[33mrep\033[0m \033[1mtiles [type of tile data] [tile selection] [new value]\033[0m")
-        print("\u001b[33mr\033[0m \033[1mheader [variable or command]  [new value]\033[0m")
-        print("\u001b[33mr\033[0m \033[1mwarp/entrance/exit [warp sublevel and number or command] [variable or command] [new value]\033[0m")
-        print("\u001b[33mr\033[0m \033[1mtiles [type of tile data] [tile selection] [new value]\033[0m")
+        print("\n"+colorScheme["bold"]+"Syntax"+colorScheme["default"])
+        print(colorScheme["command"]+"replace"+colorScheme["default"]+" "+colorScheme["bold"]+"header [variable or command] [new value]"+colorScheme["default"])
+        print(colorScheme["command"]+"replace"+colorScheme["default"]+" "+colorScheme["bold"]+"warp/entrance/exit [warp sublevel and number or command] [variable or command] [new value]"+colorScheme["default"])
+        print(colorScheme["command"]+"replace"+colorScheme["default"]+" "+colorScheme["bold"]+"tiles [type of tile data] [tile selection] [new value]"+colorScheme["default"])
+        print(colorScheme["command"]+"rep"+colorScheme["default"]+" "+colorScheme["bold"]+"header [variable or command]  [new value]"+colorScheme["default"])
+        print(colorScheme["command"]+"rep"+colorScheme["default"]+" "+colorScheme["bold"]+"warp/entrance/exit [warp sublevel and number or command] [variable or command] [new value]"+colorScheme["default"])
+        print(colorScheme["command"]+"rep"+colorScheme["default"]+" "+colorScheme["bold"]+"tiles [type of tile data] [tile selection] [new value]"+colorScheme["default"])
+        print(colorScheme["command"]+"r"+colorScheme["default"]+" "+colorScheme["bold"]+"header [variable or command]  [new value]"+colorScheme["default"])
+        print(colorScheme["command"]+"r"+colorScheme["default"]+" "+colorScheme["bold"]+"warp/entrance/exit [warp sublevel and number or command] [variable or command] [new value]"+colorScheme["default"])
+        print(colorScheme["command"]+"r"+colorScheme["default"]+" "+colorScheme["bold"]+"tiles [type of tile data] [tile selection] [new value]"+colorScheme["default"])
         time.sleep(1)
-        print("\n\033[1mAccepted Values\033[0m")
+        print("\n"+colorScheme["bold"]+"Accepted Values"+colorScheme["default"])
         print("Data Groups:")
         print("\theader | head | h\n\twarp | w\n\tentance | entr | n\n\texit | x\n\ttiles | t")
         time.sleep(1)
-        print("\n\033[1mCommands/Variables\033[0m")
+        print("\n"+colorScheme["bold"]+"Commands/Variables"+colorScheme["default"])
         print("Header:\n\tname | n\n\tlevel width | lvlwidth | lvlw | lw\n\tlevel background | lvlbg | lb\n\tlevel music | lvlmus | lm\n\tbonus background | bnsbg | bb\n\tbonus music | bnsmus | bm\n\tstart x | startx | sx\n\tstart y | starty | sy\n\tstart sublevel | start at | startat | sa\n\tdescription | desc | d\n\tbackground | bg | b\n\tmusic | mus |m\n\tstartstate | powerup | p\n\turl1 | u1\n\turl2 | u2\n\tlayer priority 1 | lpri 1 | lp1\n\tlayer priority 2 | lpri 2 | lp2\n\tlayer2 xpos | layer2 x | l2x\n\tlayer2 ypos | layer2 y | l2y")
         time.sleep(1)
         print("Warps:\n\tadd | +\n\tremove | rem | -\n\txpos | x\n\typos | y\n\tsublevel | sublvl | s\n\txposto | xt\n\typosto | yt\n\tdirection | dir | d\n\tanimation | anim | type | t")
@@ -240,7 +354,7 @@ def generalHelp(command):
         time.sleep(1)
         print("Tile Ranges:\n\tThe colon signifies a range. As in, 90:100 would select 10 columns/rows.\n\tThe comma separates the X range/columns from the Y range/rows.\n\tThe space separates the tile selection from the specified replacement value.\n\tSome examples:\n\t'4:5,8:9 100' selects tiles from x4y8 to x5y9 and replaces them with tile ID 100.\n\t'4:5,8' selects tiles 4 through 5 in the 8th column.\n\t'4,8' selects tile in position x4y8.")
         time.sleep(1)
-        print("\n\033[1mExamples\033[0m")
+        print("\n"+colorScheme["bold"]+"Examples"+colorScheme["default"])
         print("replace header name Hi! -- this will replace the current level name with \"Hi!\".")
         print("replace header music 5 -- this will replace the current level music with Underwater.")
         print("replace warp level add -- this will add a new warp to the list of level warps.")
@@ -251,27 +365,29 @@ def generalHelp(command):
         print("\nIf no value is specified, like in 'replace header name', you will be prompted to assign a value.")
         print("If no variable is specified, like in 'replace header', a Curses user interface containing all of the variables for that data group will appear.")
     elif command[:6]=="header" or command[:4]=="head" or command[:1]=="h":
-        print("\033[1mHeader Command\033[0m")
+        print(colorScheme["bold"]+"Header Command"+colorScheme["default"])
         print("This command will print formatted header data, similar to what happens when you open a file.")
-        print("\n\033[1mSyntax\033[0m")
-        print("\u001b[33mheader\033[0m")
-        print("\u001b[33mhead\033[0m")
-        print("\u001b[33mh\033[0m")
+        print("\n"+colorScheme["bold"]+"Syntax"+colorScheme["default"])
+        print(colorScheme["command"]+"header"+colorScheme["default"])
+        print(colorScheme["command"]+"head"+colorScheme["default"])
+        print(colorScheme["command"]+"h"+colorScheme["default"])
     elif command[:4]=="help" or command[:1]=="?":
-        print("\033[1mHelp Command\033[0m")
+        print(colorScheme["bold"]+"Help Command"+colorScheme["default"])
         print("This command prints useful info on how to use this program.")
-        print("\n\033[1mSyntax\033[0m")
-        print("\u001b[33mhelp\033[0m \033[1m[command]\033[0m")
-        print("\u001b[33m?\033[0m \033[1m[command]\033[0m")
+        print("\n"+colorScheme["bold"]+"Syntax"+colorScheme["default"])
+        print(colorScheme["command"]+"help"+colorScheme["default"]+" "+colorScheme["bold"]+"[command]"+colorScheme["default"])
+        print(colorScheme["command"]+"?"+colorScheme["default"]+" "+colorScheme["bold"]+"[command]"+colorScheme["default"])
     elif command[:4]=="exit" or command[:1]=="x":
-        print("\033[1mExit Command\033[0m")
+        print(colorScheme["bold"]+"Exit Command"+colorScheme["default"])
         print("This command exits this program.")
-        print("\n\033[1mSyntax\033[0m")
-        print("\u001b[33mexit\033[0m")
-        print("\u001b[33mx\033[0m")
+        print("\n"+colorScheme["bold"]+"Syntax"+colorScheme["default"])
+        print(colorScheme["command"]+"exit"+colorScheme["default"])
+        print(colorScheme["command"]+"x"+colorScheme["default"])
+    else:
+        print(colorScheme["typeerror"]+"Invalid Command!"+colorScheme["default"])
 
 smfe_background_names=[
-    "\x1B[3mNone\x1B[0m",
+    colorScheme["null"]+"None"+colorScheme["default"],
     "Land",
     "Cave",
     "Forest",
@@ -303,7 +419,7 @@ smfe_background_names=[
 ]
 
 smfe_music_names=[
-    "\x1B[3mNone\x1B[0m",
+    colorScheme["null"]+"None"+colorScheme["default"],
     "Overworld",
     "Forest",
     "Athletic",
@@ -325,7 +441,7 @@ smfe_music_names=[
 ]
 
 smf2_background_names=[
-    "\x1B[3mNone\x1B[0m",
+    colorScheme["null"]+"None"+colorScheme["default"],
     "Clouds",
     "Hills",
     "Forest",
@@ -335,12 +451,12 @@ smf2_background_names=[
     "Castle",
     "Bonus",
     "Night",
-    "\x1B[3mNone\x1B[0m",
-    "\x1B[3mCustom\x1B[0m"
+    colorScheme["null"]+"None"+colorScheme["default"],
+    colorScheme["null"]+"Custom"+colorScheme["default"]
 ]
 
 smf2c_background_names=[
-    "\x1B[3mNone\x1B[0m",
+    colorScheme["null"]+"None"+colorScheme["default"],
     "Clouds (Color 2)",
     "Hills (Colors 1/1)",
     "Forest (Color 3)",
@@ -350,8 +466,8 @@ smf2c_background_names=[
     "Castle (Color 1)",
     "Bonus (Color 1)",
     "Night (Color 1)",
-    "\x1B[3mNone\x1B[0m",
-    "\x1B[3mCustom\x1B[0m",
+    colorScheme["null"]+"None"+colorScheme["default"],
+    colorScheme["null"]+"Custom"+colorScheme["default"],
     "Tall Hills (Color 4)",
     "Mountains (Colors 2/3)",
     "Forest (Color 4)",
@@ -386,7 +502,7 @@ smf2c_background_names=[
 ]
 
 smf2c_music_names=[
-    "\x1B[3mNone\x1B[0m",
+    colorScheme["null"]+"None"+colorScheme["default"],
     "Overworld",
     "Athletic",
     "Castle",
@@ -405,7 +521,7 @@ smf2c_music_names=[
     "Plains Map",
     "Underworld Map",
     "Key Exit",
-    "\x1B[3mCustom\x1B[0m"
+    colorScheme["null"]+"Custom"+colorScheme["default"]
 ]
 
 smf2_powerup_names=[
@@ -414,48 +530,48 @@ smf2_powerup_names=[
     "Fire Mario",
     "Cape Mario",
     "Frictionless Cape Mario (unintended)",
-    "Yoshi-Riding Small Mario (unintended, \033[33munstable\033[0m)",
-    "Yoshi-Riding Big Mario (unintended, \033[33munstable\033[0m)",
-    "Yoshi-Riding Fire Mario (unintended, \033[33munstable\033[0m)",
-    "Yoshi-Riding Cape Mario (unintended, \033[33munstable\033[0m)",
-    "Door-Entering Mario (unintended, \033[31mcrashes the game\033[0m)",
+    "Yoshi-Riding Small Mario (unintended, "+colorScheme["warning"]+"unstable"+colorScheme["default"]+")",
+    "Yoshi-Riding Big Mario (unintended, "+colorScheme["warning"]+"unstable"+colorScheme["default"]+")",
+    "Yoshi-Riding Fire Mario (unintended, "+colorScheme["warning"]+"unstable"+colorScheme["default"]+")",
+    "Yoshi-Riding Cape Mario (unintended, "+colorScheme["warning"]+"unstable"+colorScheme["default"]+")",
+    "Door-Entering Mario (unintended, "+colorScheme["warning"]+"crashes the game"+colorScheme["default"]+")",
     "Vine-Climbing Small Mario (unintended)",
     "Vine-Climbing Big Mario (unintended)",
     "Vine-Climbing Fire Mario (unintended)",
     "Vine-Climbing Cape Mario (unintended)",
-    "\x1B[3mNo Mario (unintended)\x1B[0m",
+    colorScheme["null"]+"No Mario (unintended)"+colorScheme["default"],
     "Carrying Small Mario (unintended)",
     "Carrying Big Mario (unintended)",
     "Carrying Fire Mario (unintended)",
     "Carrying Cape Mario (unintended)",
-    "\x1B[3mNo Mario (unintended)\x1B[0m",
-    "\x1B[3mNo Mario (unintended)\x1B[0m",
-    "\x1B[3mNo Mario (unintended)\x1B[0m",
-    "\x1B[3mNo Mario (unintended)\x1B[0m",
-    "\x1B[3mNo Mario (unintended)\x1B[0m",
-    "\x1B[3mNo Mario (unintended)\x1B[0m",
+    colorScheme["null"]+"No Mario (unintended)"+colorScheme["default"],
+    colorScheme["null"]+"No Mario (unintended)"+colorScheme["default"],
+    colorScheme["null"]+"No Mario (unintended)"+colorScheme["default"],
+    colorScheme["null"]+"No Mario (unintended)"+colorScheme["default"],
+    colorScheme["null"]+"No Mario (unintended)"+colorScheme["default"],
+    colorScheme["null"]+"No Mario (unintended)"+colorScheme["default"],
     "Swimming Small Mario",
     "Swimming Big Mario",
     "Swimming Fire Mario",
     "Swimming Cape Mario",
-    "\x1B[3mNo Mario (unintended)\x1B[0m"
+    colorScheme["null"]+"No Mario (unintended)"+colorScheme["default"]
 ]
 
 smf2_entrance_types=[
     "Standard Entrance",
-    "Repeating Door Animation (unintended, \033[33msoftlocks the game\033[0m)",
+    "Repeating Door Animation (unintended, "+colorScheme["warning"]+"softlocks the game"+colorScheme["default"]+")",
     "Upward Pipe Entrance",
     "Downward Pipe Entrance",
-    "Repeating Downward Pipe Animation (unintended, \033[33msoftlocks the game\033[0m)",
-    "Repeating Upward Pipe Animation (unintended, \033[33msoftlocks the game\033[0m)",
+    "Repeating Downward Pipe Animation (unintended, "+colorScheme["warning"]+"softlocks the game"+colorScheme["default"]+")",
+    "Repeating Upward Pipe Animation (unintended, "+colorScheme["warning"]+"softlocks the game"+colorScheme["default"]+")",
     "Pipe Entrance Right","Pipe Entrance Left",
-    "Repeating Pipe Left Animation (unintended, \033[33msoftlocks the game\033[0m)",
-    "Repeating Pipe Right Animation (unintended, \033[33msoftlocks the game\033[0m)",
-    "No Mario (unintended, \033[33msoftlocks the game\033[0m)"
+    "Repeating Pipe Left Animation (unintended, "+colorScheme["warning"]+"softlocks the game"+colorScheme["default"]+")",
+    "Repeating Pipe Right Animation (unintended, "+colorScheme["warning"]+"softlocks the game"+colorScheme["default"]+")",
+    "No Mario (unintended, "+colorScheme["warning"]+"softlocks the game"+colorScheme["default"]+")"
 ]
 
 smf2_entrance_powerups=[
-    "No Mario (unintended, \033[33munstable\033[0m)",
+    "No Mario (unintended, "+colorScheme["warning"]+"unstable"+colorScheme["default"]+")",
     "Facing Right",
     "Facing Left",
     "Running Right (unintended)",
@@ -476,7 +592,7 @@ smf2_entrance_powerups=[
 ]
 
 smf2_exit_types=[
-    "\x1B[3mNone\x1B[0m",
+    colorScheme["null"]+"None"+colorScheme["default"],
     "Door",
     "P-Switch Door",
     "Downward Pipe",
@@ -543,10 +659,10 @@ smf_tiles=[
     ["=","Side 1 Platform"],
     ["=","Fall Platform"],
     ["0","Coin"],
-    ["·","\x1B[3mNull\x1B[0m"],
-    ["·","\x1B[3mNull\x1B[0m"],
-    ["·","\x1B[3mNull\x1B[0m"],
-    ["·","\x1B[3mNull\x1B[0m"],
+    ["·",colorScheme["null"]+"Null"+colorScheme["default"]],
+    ["·",colorScheme["null"]+"Null"+colorScheme["default"]],
+    ["·",colorScheme["null"]+"Null"+colorScheme["default"]],
+    ["·",colorScheme["null"]+"Null"+colorScheme["default"]],
     ["×","Brown Goomba"],
     ["×","Blue Goomba"],
     ["×","Podoboo"],
@@ -584,9 +700,9 @@ smf_tiles=[
     ["√","Win"],
     ["|","Flag Pole"],
     [">","Flag"],
-    ["·","\x1B[3mNull\x1B[0m"],
-    ["·","\x1B[3mNull\x1B[0m"],
-    ["·","\x1B[3mNull\x1B[0m"],
+    ["·",colorScheme["null"]+"Null"+colorScheme["default"]],
+    ["·",colorScheme["null"]+"Null"+colorScheme["default"]],
+    ["·",colorScheme["null"]+"Null"+colorScheme["default"]],
     ["▒","Castle Base Left Top"],
     ["▒","Castle Base Left"],
     ["▒","Castle Base Top"],
@@ -604,8 +720,8 @@ smf_tiles=[
     ["▒","Castle Window Right"],
     ["▒","Castle Door Top"],
     ["▒","Castle Window Left"],
-    ["·","\x1B[3mNull\x1B[0m"],
-    ["·","\x1B[3mNull\x1B[0m"],
+    ["·",colorScheme["null"]+"Null"+colorScheme["default"]],
+    ["·",colorScheme["null"]+"Null"+colorScheme["default"]],
     ["█","Land Top Left"],
     ["█","Land Top Right"],
     ["█","Castle Solid Brick"],
@@ -631,12 +747,12 @@ smf_tiles=[
     ["▒","Tree Small"],
     ["▒","Snowy Fence"],
     ["▒","Fence"],
-    ["·","\x1B[3mNull\x1B[0m"],
+    ["·",colorScheme["null"]+"Null"+colorScheme["default"]],
     ["S","Start Point Top"],
     ["S","Start Point Bottom"],
     ["↕","Door Top"],
     ["↕","Door Bottom"],
-    ["·","\x1B[3mNull\x1B[0m"],
+    ["·",colorScheme["null"]+"Null"+colorScheme["default"]],
     ["↓","In Warp Down Left"],
     ["↓","In Warp Down Right"],
     ["→","In Warp Right Top"],
@@ -681,7 +797,7 @@ smf_tiles=[
     ["█","Grey Pipe Horz Bottom Left"],
     ["×","Dry Bones"],
     ["×","Thwomp"], # 194 - SMF tile limit #
-    ["·","\x1B[3mNull\x1B[0m"],
+    ["·",colorScheme["null"]+"Null"+colorScheme["default"]],
 ]
 
 smf2_tiles=[
@@ -731,15 +847,15 @@ smf2_tiles=[
     ["\\","Grey Underground 45° Slope Bottom Down"],
     ["\\","Grey Underground 45° Slope Bottom Down Extend"],
     ["/","Grey Underground 22.5° Slope Bottom Up 2"],
-    ["/","\x1B[3mNull\x1B[0m"], # 46 - teleports player downwards from left and right, and kills from top and bottom. May be a slope.
+    ["/",colorScheme["null"]+"Null"+colorScheme["default"]], # 46 - teleports player downwards from left and right, and kills from top and bottom. May be a slope.
     ["/","Grey Underground 22.5° Slope Bottom Up 1"],
     ["/","Grey Underground 22.5° Slope Bottom Up Extend"],
     ["\\","Grey Underground 22.5° Slope Bottom Down 2"],
-    ["\\","\x1B[3mNull\x1B[0m"], # 50 - teleports player downwards from left and right, and kills from top and bottom. May be a slope.
+    ["\\",colorScheme["null"]+"Null"+colorScheme["default"]], # 50 - teleports player downwards from left and right, and kills from top and bottom. May be a slope.
     ["\\","Grey Underground 22.5° Slope Bottom Down 1"],
     ["\\","Grey Underground 22.5° Slope Bottom Down Extend"],
-    ["·","\x1B[3mNull\x1B[0m"],
-    ["·","\x1B[3mNull\x1B[0m"],
+    ["·",colorScheme["null"]+"Null"+colorScheme["default"]],
+    ["·",colorScheme["null"]+"Null"+colorScheme["default"]],
     ["█","Flip Block"],
     ["█","Coin ?"],
     ["█","Mushroom ?"],
@@ -950,11 +1066,11 @@ smf2_tiles=[
     ["▒","Bush Left"],
     ["▒","Bush Center"],
     ["▒","Bush Right"],
-    ["/","Sloped Green Pipe Top Up Edge"],
-    ["/","Sloped Green Pipe Top Up"],
-    ["▒","Sloped Green Pipe Top Up Extend"],
-    ["▒","Sloped Green Pipe Center"],
-    ["/","Sloped Green Pipe Bottom Up"],
+    ["/","Sloped Green Pipe Top Up Edge"], # The first word refers to the pipe tile's direction, i.e. ceiling/floor
+    ["/","Sloped Green Pipe Top Up"],      # The second word specifies which way the tile is sloped, going to the right
+    ["▒","Sloped Green Pipe Top Up Extend"], # Extend means that it is a tile that bridges the gap between a center
+    ["▒","Sloped Green Pipe Center"],      # tile and a ceiling/floor. It is placed above or below the tile
+    ["/","Sloped Green Pipe Bottom Up"],   # Edge refers to a corner
     ["▒","Sloped Green Pipe Bottom Up Extend"],
     ["▒","Sloped Green Pipe Top Up Edge Extend"],
     ["▒","Sloped Green Pipe Bottom Up Edge Extend"],
@@ -1092,7 +1208,7 @@ smf2_tiles=[
     ["┌","Climbing Net Right and Down Join"],
     ["┘","Climbing Net Left and Up Join"],
     ["└","Climbing Net Right and Up Join"], # 406 - SMF2 tile limit #
-    ["·","\x1B[3mNull\x1B[0m"],
+    ["·",colorScheme["null"]+"Null"+colorScheme["default"]],
 ]
 #print(smf2_tiles[406][0]+" - Tile 406 - "+smf2_tiles[406][1])
 #print(smf2c_background_names[42])
@@ -1139,139 +1255,139 @@ layer_2=[]
 def printInfo():
     if game=="smf" or game=="smfe":
         if game=="smf":
-            print("\033[1mGame: \033[0mSuper Mario Flash")
+            print(colorScheme["bold"]+"Game: "+colorScheme["default"]+"Super Mario Flash")
         elif game=="smfe":
-            print("\033[1mGame: \033[0mSuper Mario Flash Ver. E")
+            print(colorScheme["bold"]+"Game: "+colorScheme["default"]+"Super Mario Flash Ver. E")
         else:
-            print("\033[31mYou messed with the source code, didn't you? \033[0m")
-        print("\033[1mLevel Name: \033[0m"+level_name) if level_name!="" else print("\x1B[3mNone\x1B[0m")
+            print(colorScheme["error"]+"You messed with the source code, didn't you? "+colorScheme["default"])
+        print(colorScheme["bold"]+"Level Name: "+colorScheme["default"]+level_name) if level_name!="" else print(colorScheme["null"]+"None"+colorScheme["default"])
         try:
-            print("\033[1mLevel Background: \033[0m"+level_background+" ("+smfe_background_names[int(level_background)]+")")
+            print(colorScheme["bold"]+"Level Background: "+colorScheme["default"]+level_background+" ("+smfe_background_names[int(level_background)]+")")
         except:
-            print("\033[1mLevel Background: \033[0m"+level_background+" ("+smfe_background_names[0]+")")
+            print(colorScheme["bold"]+"Level Background: "+colorScheme["default"]+level_background+" ("+smfe_background_names[0]+")")
         try:
-            print("\033[1mLevel Music: \033[0m"+level_music+" ("+smfe_music_names[int(level_music)]+")")
+            print(colorScheme["bold"]+"Level Music: "+colorScheme["default"]+level_music+" ("+smfe_music_names[int(level_music)]+")")
         except:
-            print("\033[1mLevel Music: \033[0m"+level_music+" ("+smfe_music_names[0]+")")
+            print(colorScheme["bold"]+"Level Music: "+colorScheme["default"]+level_music+" ("+smfe_music_names[0]+")")
         if int(level_width)/20!=math.floor(int(level_width)/20) and (int(level_width)<320 or int(level_width)>4500):
-            print("\033[1mLevel Width: \033[0m"+level_width+" ({:.0f}".format(int(level_width)/20)+" tiles, no right border, unintended size)")
+            print(colorScheme["bold"]+"Level Width: "+colorScheme["default"]+level_width+" ({:.0f}".format(int(level_width)/20)+" tiles, no right border, unintended size)")
         elif int(level_width)/20!=math.floor(int(level_width)/20):
-            print("\033[1mLevel Width: \033[0m"+level_width+" ({:.0f}".format(int(level_width)/20)+" tiles, no right border)")
+            print(colorScheme["bold"]+"Level Width: "+colorScheme["default"]+level_width+" ({:.0f}".format(int(level_width)/20)+" tiles, no right border)")
         elif (int(level_width)<320 or int(level_width)>4500):
-            print("\033[1mLevel Width: \033[0m"+level_width+" ({:.0f}".format(int(level_width)/20)+" tiles, unintended size)")
+            print(colorScheme["bold"]+"Level Width: "+colorScheme["default"]+level_width+" ({:.0f}".format(int(level_width)/20)+" tiles, unintended size)")
         else:
-            print("\033[1mLevel Width: \033[0m"+level_width+" ({:.0f}".format(int(level_width)/20)+" tiles)")
+            print(colorScheme["bold"]+"Level Width: "+colorScheme["default"]+level_width+" ({:.0f}".format(int(level_width)/20)+" tiles)")
         try:
-            print("\033[1mBonus Background: \033[0m"+bonus_background+" ("+smfe_background_names[int(bonus_background)]+")")
+            print(colorScheme["bold"]+"Bonus Background: "+colorScheme["default"]+bonus_background+" ("+smfe_background_names[int(bonus_background)]+")")
         except:
-            print("\033[1mBonus Background: \033[0m"+bonus_background+" ("+smfe_background_names[0]+")")
+            print(colorScheme["bold"]+"Bonus Background: "+colorScheme["default"]+bonus_background+" ("+smfe_background_names[0]+")")
         try:
-            print("\033[1mBonus Music: \033[0m"+bonus_music+" ("+smfe_music_names[int(bonus_music)]+")")
+            print(colorScheme["bold"]+"Bonus Music: "+colorScheme["default"]+bonus_music+" ("+smfe_music_names[int(bonus_music)]+")")
         except:
-            print("\033[1mBonus Music: \033[0m"+bonus_music+" ("+smfe_music_names[0]+")")
+            print(colorScheme["bold"]+"Bonus Music: "+colorScheme["default"]+bonus_music+" ("+smfe_music_names[0]+")")
         if int(bonus_width)/20!=math.floor(int(bonus_width)/20) and (int(bonus_width)<320 or int(bonus_width)>4500):
-            print("\033[1mBonus Width: \033[0m"+bonus_width+" ({:.0f}".format(int(bonus_width)/20)+" tiles, no right border, unintended size)")
+            print(colorScheme["bold"]+"Bonus Width: "+colorScheme["default"]+bonus_width+" ({:.0f}".format(int(bonus_width)/20)+" tiles, no right border, unintended size)")
         elif int(bonus_width)/20!=math.floor(int(bonus_width)/20):
-            print("\033[1mBonus Width: \033[0m"+bonus_width+" ({:.0f}".format(int(bonus_width)/20)+" tiles, no right border)")
+            print(colorScheme["bold"]+"Bonus Width: "+colorScheme["default"]+bonus_width+" ({:.0f}".format(int(bonus_width)/20)+" tiles, no right border)")
         elif (int(bonus_width)<320 or int(bonus_width)>4500):
-            print("\033[1mBonus Width: \033[0m"+bonus_width+" ({:.0f}".format(int(bonus_width)/20)+" tiles, unintended size)")
+            print(colorScheme["bold"]+"Bonus Width: "+colorScheme["default"]+bonus_width+" ({:.0f}".format(int(bonus_width)/20)+" tiles, unintended size)")
         else:
-            print("\033[1mBonus Width: \033[0m"+bonus_width+" ({:.0f}".format(int(bonus_width)/20)+" tiles)")    
-        print("\033[1mStart Point: \033[0m"+start_at+" @ xPos "+start_xpos+" yPos "+start_ypos+" ("+str(int(start_xpos)/20)+" tiles horz, "+str(int(start_ypos)/20)+" tiles vert)")
-        print("\033[1mLevel Warps:\033[0m")
+            print(colorScheme["bold"]+"Bonus Width: "+colorScheme["default"]+bonus_width+" ({:.0f}".format(int(bonus_width)/20)+" tiles)")    
+        print(colorScheme["bold"]+"Start Point: "+colorScheme["default"]+f"{start_at} @ xPos {start_xpos} yPos {start_ypos} ({int(start_xpos)/20} tiles horz, {int(start_ypos)/20} tiles vert)")
+        print(colorScheme["bold"]+"Level Warps:"+colorScheme["default"])
         for i in range(len(level_warps)):
             if level_warps[i][2]=="Level" or level_warps[i][2]=="Bonus":
                 warp_end_sublevel_print=level_warps[i][2]
             else:
-                warp_end_sublevel_print=level_warps[i][2]+" (invalid, \033[33msoftlocks the game\033[0m)"
+                warp_end_sublevel_print=level_warps[i][2]+" (invalid, "+colorScheme["warning"]+"softlocks the game"+colorScheme["default"]+")"
             if level_warps[i][5]=="right" or level_warps[i][5]=="left":
                 warp_end_direction_print="facing "+level_warps[i][5]
             else:
-                warp_end_direction_print="\x1B[3mglitchy entrance ("+level_warps[i][5]+")\x1B[0m"
+                warp_end_direction_print=colorScheme["warning"]+"glitchy entrance ("+level_warps[i][5]+")"+colorScheme["default"]
             if level_warps[i][6]=="Up" or level_warps[i][6]=="Down" or level_warps[i][6]=="Left" or level_warps[i][6]=="Right":
                 warp_end_type_print="Pipe "+level_warps[i][6]+" Animation"
             elif level_warps[i][6]=="Appear":
                 warp_end_type_print="No Animation"
             else:
-                warp_end_type_print="\x1B[3minvalid animation \""+level_warps[i][6]+"\"\033[33msoftlocks the game\033[0m)"
-            warp_print="\tWarp from xPos "+str(int(level_warps[i][1])*20)+" yPos "+str(int(level_warps[i][0])*20)+" to xPos "+level_warps[i][3]+" yPos "+level_warps[i][4]+" in "+warp_end_sublevel_print+", "+warp_end_direction_print+", "+warp_end_type_print
+                warp_end_type_print=colorScheme["warning"]+"invalid animation \""+level_warps[i][6]+"\" ("+colorScheme["warning"]+"softlocks the game"+colorScheme["default"]+")"
+            warp_print=f"\tWarp from xPos {int(level_warps[i][1])*20} yPos {int(level_warps[i][0])*20} to xPos {level_warps[i][3]} yPos {level_warps[i][4]} in {warp_end_sublevel_print}, {warp_end_direction_print}, {warp_end_type_print}"
             
             print(warp_print)
         if level_warps==[]:
-            warp_print="\x1B[3m\tNone\x1B[0m"
+            warp_print=colorScheme["null"]+"\tNone"+colorScheme["default"]
             print(warp_print)
-        print("\033[1mBonus Warps:\033[0m")
+        print(colorScheme["bold"]+"Bonus Warps:"+colorScheme["default"])
         for i in range(len(bonus_warps)):
             if bonus_warps[i][2]=="Level" or bonus_warps[i][2]=="Bonus":
                 warp_end_sublevel_print=bonus_warps[i][2]
             else:
-                warp_end_sublevel_print=bonus_warps[i][2]+" (invalid, \033[33msoftlocks the game\033[0m)"
+                warp_end_sublevel_print=bonus_warps[i][2]+" (invalid, "+colorScheme["warning"]+"softlocks the game"+colorScheme["default"]+")"
             if bonus_warps[i][5]=="right" or bonus_warps[i][5]=="left":
                 warp_end_direction_print="facing "+bonus_warps[i][5]
             else:
-                warp_end_direction_print="\x1B[3mglitchy entrance ("+bonus_warps[i][5]+")\x1B[0m"
+                warp_end_direction_print=colorScheme["warning"]+"glitchy entrance ("+bonus_warps[i][5]+")"+colorScheme["default"]
             if bonus_warps[i][6]=="Up" or bonus_warps[i][6]=="Down" or bonus_warps[i][6]=="Left" or bonus_warps[i][6]=="Right":
                 warp_end_type_print="Pipe "+bonus_warps[i][6]+" Animation"
             elif bonus_warps[i][6]=="Appear":
                 warp_end_type_print="No Animation"
             else:
-                warp_end_type_print="\x1B[3minvalid animation \""+bonus_warps[i][6]+"\"\033[33msoftlocks the game\033[0m)"
+                warp_end_type_print=colorScheme["null"]+"invalid animation \""+bonus_warps[i][6]+"\" (softlocks the game)"+colorScheme["default"]
             warp_print="\tWarp from xPos "+str(int(bonus_warps[i][1])*20)+" yPos "+str(int(bonus_warps[i][0])*20)+" to xPos "+bonus_warps[i][3]+" yPos "+bonus_warps[i][4]+" in "+warp_end_sublevel_print+", "+warp_end_direction_print+", "+warp_end_type_print
             
             print(warp_print)
         if bonus_warps==[]:
-            warp_print="\x1B[3m\tNone\x1B[0m"
+            warp_print=colorScheme["null"]+"\tNone"+colorScheme["default"]
             print(warp_print)
     elif game=="smf2" or game=="smf2c":
         if game=="smf2":
-            print("\033[1mGame: \033[0mSuper Mario Flash 2")
+            print(colorScheme["bold"]+"Game: "+colorScheme["default"]+"Super Mario Flash 2")
         elif game=="smf2c":
-            print("\033[1mGame: \033[0mSuper Mario Flash 2 Ver. C")
+            print(colorScheme["bold"]+"Game: "+colorScheme["default"]+"Super Mario Flash 2 Ver. C")
         else:
-            print("\033[31mYou messed with the source code, didn't you? \033[0m")
-        print("\033[1mLevel Name: \033[0m"+level_name) if level_name!="" else print("\x1B[3mNone\x1B[0m")
-        print("\033[1mDescription: \033[0m"+level_description) if level_description!="" else print("\x1B[3mNone\x1B[0m")
-        print("\033[1mAuthor: \033[0m"+level_author) if level_author!="" else print("\x1B[3mNone\x1B[0m")
-        print("\033[1mMessage Block Text: «\033[0m"+level_message+"\033[1m»\033[0m")
+            print(colorScheme["error"]+"You messed with the source code, didn't you? "+colorScheme["default"])
+        print(colorScheme["bold"]+"Level Name: "+colorScheme["default"]+level_name) if level_name!="" else print(colorScheme["null"]+"None"+colorScheme["default"])
+        print(colorScheme["bold"]+"Description: "+colorScheme["default"]+level_description) if level_description!="" else print(colorScheme["null"]+"None"+colorScheme["default"])
+        print(colorScheme["bold"]+"Author: "+colorScheme["default"]+level_author) if level_author!="" else print(colorScheme["null"]+"None"+colorScheme["default"])
+        print(colorScheme["bold"]+"Message Block Text: «"+colorScheme["default"]+level_message+colorScheme["bold"]+"»"+colorScheme["default"])
         try:
             if game=="smf2":
-                print("\033[1mBackground: \033[0m"+level_background+" ("+smf2_background_names[int(level_background)]+")")
+                print(colorScheme["bold"]+"Background: "+colorScheme["default"]+level_background+" ("+smf2_background_names[int(level_background)]+")")
             elif game=="smf2c":
-                print("\033[1mBackground: \033[0m"+level_background+" ("+smf2c_background_names[int(level_background)]+")")
+                print(colorScheme["bold"]+"Background: "+colorScheme["default"]+level_background+" ("+smf2c_background_names[int(level_background)]+")")
         except:
-            print("\033[1mBackground: \033[0m"+level_background+" ("+smf2_background_names[0]+")")
+            print(colorScheme["bold"]+"Background: "+colorScheme["default"]+level_background+" ("+smf2_background_names[0]+")")
         if level_background=="11":
-            print("\033[1mBackground URL 1: \033[0m\u001b[36m\u001b[4m"+level_url1+"\033[0m") if level_url1!="" else print("\033[1mBackground URL 1: \033[0m\x1B[3mNone\x1B[0m")
-            print("\033[1mBackground URL 2: \033[0m\u001b[36m\u001b[4m"+level_bg_url2+"\033[0m") if level_bg_url2!="" else print("\033[1mBackground URL 2: \033[0m\x1B[3mNone\x1B[0m")
+            print(colorScheme["bold"]+"Background URL 1: "+colorScheme["default"]+colorScheme["link"]+level_url1+colorScheme["default"]) if level_url1!="" else print(colorScheme["bold"]+"Background URL 1: "+colorScheme["default"]+colorScheme["null"]+"None"+colorScheme["default"])
+            print(colorScheme["bold"]+"Background URL 2: "+colorScheme["default"]+colorScheme["link"]+level_bg_url2+colorScheme["default"]) if level_bg_url2!="" else print(colorScheme["bold"]+"Background URL 2: "+colorScheme["default"]+colorScheme["null"]+"None"+colorScheme["default"])
         try:
-            print("\033[1mMusic: \033[0m"+level_music+" ("+smf2c_music_names[int(level_music)]+")")
+            print(colorScheme["bold"]+"Music: "+colorScheme["default"]+level_music+" ("+smf2c_music_names[int(level_music)]+")")
         except:
-            print("\033[1mMusic: \033[0m"+level_music+" ("+smf2c_music_names[0]+")")
+            print(colorScheme["bold"]+"Music: "+colorScheme["default"]+level_music+" ("+smf2c_music_names[0]+")")
         try:
-            print("\033[1mMario's State: \033[0m"+level_powerup+" ("+smf2_powerup_names[int(level_powerup)]+")")
+            print(colorScheme["bold"]+"Mario's State: "+colorScheme["default"]+level_powerup+" ("+smf2_powerup_names[int(level_powerup)]+")")
         except:
-            print("\033[1mMario's State: \033[0m"+level_powerup+" ("+smf2_powerup_names[0]+")")
-        print("\033[1mLevel Dimensions: \033[0m"+level_width+"x"+level_height+" ("+str(int(level_height)/20)+" Rows by "+str(int(level_width)/20)+" Columns)")
-        print("\033[1mUnknown Variable=\033[0m"+level_variable_1)
-        print("\033[1mUnknown Variable=\033[0m"+level_variable_2)
+            print(colorScheme["bold"]+"Mario's State: "+colorScheme["default"]+level_powerup+" ("+smf2_powerup_names[0]+")")
+        print(colorScheme["bold"]+"Level Dimensions: "+colorScheme["default"]+level_width+"x"+level_height+" ("+str(int(level_height)/20)+" Rows by "+str(int(level_width)/20)+" Columns)")
+        print(colorScheme["bold"]+"Unknown Variable="+colorScheme["default"]+level_variable_1)
+        print(colorScheme["bold"]+"Unknown Variable="+colorScheme["default"]+level_variable_2)
         try:
-            print("\033[1mLayer 1 Priority: \033[0m"+level_layer_priority+" (On Top)") if int(level_layer_priority)>=3 else print("\033[1mLayer 1 Priority: \033[0m"+level_layer_priority+" (On Bottom)")
+            print(colorScheme["bold"]+"Layer 1 Priority: "+colorScheme["default"]+level_layer_priority+" (On Top)") if int(level_layer_priority)>=3 else print(colorScheme["bold"]+"Layer 1 Priority: "+colorScheme["default"]+level_layer_priority+" (On Bottom)")
         except:
-            print("\033[1mLayer 1 Priority: \033[0m"+level_layer_priority+" (Invalid)")
-        print("\033[1mLayer 2 Dimensions: \033[0m"+level_layer2_width+"x"+level_layer2_height+" ("+str(int(level_layer2_height)/20)+" Rows by "+str(int(level_layer2_width)/20)+" Columns)")
-        print("\033[1mLayer 2 X Offset: \033[0m"+level_layer2_xpos)
-        print("\033[1mLayer 2 Y Offset: \033[0m"+level_layer2_ypos)
+            print(colorScheme["bold"]+"Layer 1 Priority: "+colorScheme["default"]+level_layer_priority+" (Invalid)")
+        print(colorScheme["bold"]+"Layer 2 Dimensions: "+colorScheme["default"]+level_layer2_width+"x"+level_layer2_height+" ("+str(int(level_layer2_height)/20)+" Rows by "+str(int(level_layer2_width)/20)+" Columns)")
+        print(colorScheme["bold"]+"Layer 2 X Offset: "+colorScheme["default"]+level_layer2_xpos)
+        print(colorScheme["bold"]+"Layer 2 Y Offset: "+colorScheme["default"]+level_layer2_ypos)
         try:
-            print("\033[1mLayer 2 Priority: \033[0m"+level_layer_priority_2+" (On Bottom)") if int(level_layer_priority_2)<=2 else print("\033[1mLayer 2 Priority: \033[0m"+level_layer_priority_2+" (On Top)")
+            print(colorScheme["bold"]+"Layer 2 Priority: "+colorScheme["default"]+level_layer_priority_2+" (On Bottom)") if int(level_layer_priority_2)<=2 else print(colorScheme["bold"]+"Layer 2 Priority: "+colorScheme["default"]+level_layer_priority_2+" (On Top)")
         except:
-            print("\033[1mLayer 2 Priority: \033[0m"+level_layer_priority_2+" (Invalid)")
-        print("\033[1mUnknown Variable=\033[0m"+level_variable_3)
-        print("\033[1mEntrances:\033[0m")
+            print(colorScheme["bold"]+"Layer 2 Priority: "+colorScheme["default"]+level_layer_priority_2+" (Invalid)")
+        print(colorScheme["bold"]+"Unknown Variable="+colorScheme["default"]+level_variable_3)
+        print(colorScheme["bold"]+"Entrances:"+colorScheme["default"])
         for i in range(len(all_entrances)):
             if i==0:
-                entrance_print="\t\033[1mID "+str(i+1)+" (Starting Point):\033[0m "
+                entrance_print="\t"+colorScheme["bold"]+"ID "+str(i+1)+" (Starting Point):"+colorScheme["default"]+" "
             else:
-                entrance_print="\t\033[1mID "+str(i+1)+":\033[0m "
+                entrance_print="\t"+colorScheme["bold"]+"ID "+str(i+1)+":"+colorScheme["default"]+" "
             try:
                 entrance_type_print=smf2_entrance_types[int(all_entrances[i][0])]
             except:
@@ -1291,7 +1407,7 @@ def printInfo():
             entrance_print=entrance_print+entrance_type_print+" ["+all_entrances[i][0]+"], "+entrance_mario_status_print+" ["+all_entrances[i][3]+"] @ xPos "+all_entrances[i][1]+" yPos "+all_entrances[i][2]+" ("+str(int(all_entrances[i][1])/20)+" tiles horz, "+str(int(all_entrances[i][2])/20)+" tiles vert)"
 
             print(entrance_print)
-        print("\033[1mExits:\033[0m")
+        print(colorScheme["bold"]+"Exits:"+colorScheme["default"])
         exit_print=""
         for i in range(len(all_exits)):
             exit_print="\t"
@@ -1300,19 +1416,19 @@ def printInfo():
             except:
                 exit_type_print=smf2_exit_types[0]
 
-            exit_print=exit_print+exit_type_print+" ["+all_exits[i][2]+"] to \033[1mID "+str(int(all_exits[i][3])+1)+"\033[0m @ xPos "+str(int(all_exits[i][0])*20)+" yPos "+str(int(all_exits[i][1])*20)+" ("+all_exits[i][0]+" tiles horz, "+all_exits[i][1]+" tiles vert)"
+            exit_print=exit_print+exit_type_print+" ["+all_exits[i][2]+"] to "+colorScheme["bold"]+"ID "+str(int(all_exits[i][3])+1)+colorScheme["default"]+" @ xPos "+str(int(all_exits[i][0])*20)+" yPos "+str(int(all_exits[i][1])*20)+" ("+all_exits[i][0]+" tiles horz, "+all_exits[i][1]+" tiles vert)"
             print(exit_print)
             
         if exit_print=="":
-            print("\x1B[3m\tNone\x1B[0m")
+            print(colorScheme["null"]+"\tNone"+colorScheme["default"])
     else:
-        print("\x1B[3mNo level in memory!\x1B[0m")
+        print(colorScheme["typeerror"]+"No level in memory!"+colorScheme["default"])
 
 def openFile(filePath):
     if filePath=="":
         filePath=filedialog.askopenfilename(title="Please open a Super Mario Flash level file.", initialdir=filePath)
         if filePath=="":
-            print("\x1B[3mNo File Opened!\x1B[0m")
+            print(colorScheme["typeerror"]+"No File Opened!"+colorScheme["default"])
             return
     else:
         filePath=os.path.normpath(filePath)
@@ -1322,16 +1438,16 @@ def openFile(filePath):
 
             filePath=filedialog.askopenfilename(title="Please open a Super Mario Flash level file.", initialdir=filePath)
             if filePath=="":
-                print("\x1B[3mNo File Opened!\x1B[0m")
+                print(colorScheme["typeerror"]+"No File Opened!"+colorScheme["default"])
                 return
     try:
         file=open(filePath,mode='r', encoding="utf-8")
         level_code=file.read()
     except UnicodeDecodeError:
-        print("\033[31mInvalid file!\nConsider converting your level data to txt or csv.\033[0m")
+        print(colorScheme["error"]+"Invalid file!\nConsider converting your level data to txt or csv."+colorScheme["default"])
         return
     except FileNotFoundError:
-        print("\x1B[3mNo such file or directory!\x1B[0m")
+        print(colorScheme["typeerror"]+"No such file or directory!"+colorScheme["default"])
         return
 
     #print(level_code) # useful for debugging
@@ -1696,11 +1812,11 @@ def openFile(filePath):
             
         except IndexError as e:
             errorString=str(e)+" occured on line "+str(e.__traceback__.tb_lineno)
-            print("\033[31m"+"Invalid or incomplete level code\n"+errorString+"\033[0m")
+            print(colorScheme["error"]+"Invalid or incomplete level code\n"+errorString+colorScheme["default"])
             return
         except ValueError as e:
             errorString=str(e)+" occured on line "+str(e.__traceback__.tb_lineno)
-            print("\033[31m"+"Invalid tile data\n"+errorString+"\033[0m")
+            print(colorScheme["error"]+"Invalid tile data\n"+errorString+colorScheme["default"])
             return
             
 
@@ -2055,40 +2171,24 @@ def openFile(filePath):
             return
             
         except Exception as e:
-            print("\033[31m"+"exception encountered during parsing\ndata dump:\n\nlevel_name: "+level_name+"\nlevel_description: "+level_description+"\nlevel_author: "+level_author+"\nlevel_message: "+level_message+"\nlevel_background: "+level_background+"\nlevel_url1: "+level_url1+"\nlevel_bg_url2: "+level_bg_url2+"\nlevel_music: "+level_music+"\nlevel_powerup: "+level_powerup+"\nlevel_width: "+level_width+"\nlevel_height: "+level_height+"\nlevel_variable_1: "+level_variable_1+"\nlevel_variable_2: "+level_variable_2+"\nlevel_layer_priority: "+level_layer_priority+"\nlevel_layer2_width: "+level_layer2_width+"\nlevel_layer2_height: "+level_layer2_height+"\nlevel_layer2_xpos: "+level_layer2_xpos+"\nlevel_layer2_ypos: "+level_layer2_ypos+"\nlevel_layer_priority_2: "+level_layer_priority_2+"\nlevel_variable_3: "+level_variable_3+"\noneentrance: "+str(oneentrance)+"\nall_entrances: "+str(all_entrances)+"\noneexit: "+str(oneexit)+"\nall_exits: "+str(all_exits)+"\nlayer_1: "+str(layer_1)+"\nlayer_2: "+str(layer_2)+"\ncurrent_row: "+str(current_row)+"\ntiles_processed: "+str(tiles_processed)+"\n\n"+str(e)+" occured on line "+str(e.__traceback__.tb_lineno)+"\033[0m")
+            print(colorScheme["error"]+"exception encountered during parsing\ndata dump:\n\nlevel_name: "+level_name+"\nlevel_description: "+level_description+"\nlevel_author: "+level_author+"\nlevel_message: "+level_message+"\nlevel_background: "+level_background+"\nlevel_url1: "+level_url1+"\nlevel_bg_url2: "+level_bg_url2+"\nlevel_music: "+level_music+"\nlevel_powerup: "+level_powerup+"\nlevel_width: "+level_width+"\nlevel_height: "+level_height+"\nlevel_variable_1: "+level_variable_1+"\nlevel_variable_2: "+level_variable_2+"\nlevel_layer_priority: "+level_layer_priority+"\nlevel_layer2_width: "+level_layer2_width+"\nlevel_layer2_height: "+level_layer2_height+"\nlevel_layer2_xpos: "+level_layer2_xpos+"\nlevel_layer2_ypos: "+level_layer2_ypos+"\nlevel_layer_priority_2: "+level_layer_priority_2+"\nlevel_variable_3: "+level_variable_3+"\noneentrance: "+str(oneentrance)+"\nall_entrances: "+str(all_entrances)+"\noneexit: "+str(oneexit)+"\nall_exits: "+str(all_exits)+"\nlayer_1: "+str(layer_1)+"\nlayer_2: "+str(layer_2)+"\ncurrent_row: "+str(current_row)+"\ntiles_processed: "+str(tiles_processed)+"\n\n"+str(e)+" occured on line "+str(e.__traceback__.tb_lineno)+colorScheme["default"])
             return
         
     else:
-        print("\033[31m"+"Invalid level code!\nNo valid delimiters found in file."+"\033[0m")
+        print(colorScheme["error"]+"Invalid level code!\nNo valid delimiters found in file."+colorScheme["default"])
         return
         
 def exportAll(fileFormat):
     if game=="smf" or game=="smfe":
-        filePath=filedialog.askdirectory()
+        if fileFormat=="csv" or fileFormat=="txt" or fileFormat=="map":
+            filePath=filedialog.askdirectory()
+        else:
+            print(colorScheme["typeerror"]+"Invalid file format!"+colorScheme["default"])
+            return
         if filePath=="":
-            print("\x1B[3mNo Path Selected!\x1B[0m")
+            print(colorScheme["typeerror"]+"No Path Selected!"+colorScheme["default"])
             return
         if fileFormat=="csv":
-            output="SMFDATA\nname=\""+level_name+"\"\nlvlbg="+level_background+"\nlvlmusic="+level_music+"\nlvlwidth="+level_width+"\nbnsbg="+bonus_background+"\nbnsmusic="+bonus_music+"\nbnswidth="+bonus_width+"\n\nstart("+start_xpos+","+start_ypos+") @ "+start_at
-            print("Gathering level header data...")
-            try:
-                file=open(str(filePath+"/"+level_name.replace("/","⧸").replace("\\","⧹").replace("*","⁎").replace("\"","‟").replace("<","❮").replace(">","❯").replace(":","˸").replace("|","⏐").replace("?","？")+"_header.txt"),mode='w', encoding="utf-8")
-                file.write(output)
-                file.close()
-            except PermissionError:
-                print("\033[33m\x1B[3mFile in use!\033[0m")
-            output="SMFWARPS"
-            print("Processing warp data...")
-            for i in range(len(level_warps)):
-                output+="\nfrom("+level_warps[i][1]+","+level_warps[i][0]+")levelto("+level_warps[i][3]+","+level_warps[i][4]+")in"+level_warps[i][2]+",facing\""+level_warps[i][5]+"\",anim\""+level_warps[i][6]+"\""
-            for i in range(len(bonus_warps)):
-                output+="\nfrom("+bonus_warps[i][1]+","+bonus_warps[i][0]+")bonusto("+bonus_warps[i][3]+","+bonus_warps[i][4]+")in"+bonus_warps[i][2]+",facing\""+bonus_warps[i][5]+"\",anim\""+bonus_warps[i][6]+"\""
-            try:
-                file=open(str(filePath+"/"+level_name.replace("/","⧸").replace("\\","⧹").replace("*","⁎").replace("\"","‟").replace("<","❮").replace(">","❯").replace(":","˸").replace("|","⏐").replace("?","？")+"_warps.txt"),mode='w', encoding="utf-8")
-                file.write(output)
-                file.close()
-            except PermissionError:
-                print("\033[33m\x1B[3mFile in use!\033[0m")
             output=""
             print("Processing Level tiles...")
             for i in level:
@@ -2102,7 +2202,7 @@ def exportAll(fileFormat):
                 file.write(output)
                 file.close()
             except PermissionError:
-                print("\033[33m\x1B[3mFile in use!\033[0m")
+                print(colorScheme["typeerror"]+"File in use!"+colorScheme["default"])
             output=""
             print("Processing Bonus tiles...")
             for i in bonus:
@@ -2116,7 +2216,7 @@ def exportAll(fileFormat):
                 file.write(output)
                 file.close()
             except PermissionError:
-                print("\033[33m\x1B[3mFile in use!\033[0m")
+                print(colorScheme["typeerror"]+"File in use!"+colorScheme["default"])
         elif fileFormat=="txt":
             output="("
             for i in level:
@@ -2152,7 +2252,7 @@ def exportAll(fileFormat):
                 file.write(output)
                 file.close()
             except PermissionError:
-                print("\033[33m\x1B[3mFile in use!\033[0m")
+                print(colorScheme["typeerror"]+"File in use!"+colorScheme["default"])
         elif fileFormat=="map":
             output=""
             for i in level:
@@ -2167,7 +2267,7 @@ def exportAll(fileFormat):
                 file.write(output)
                 file.close()
             except PermissionError:
-                print("\033[33m\x1B[3mFile in use!\033[0m")
+                print(colorScheme["typeerror"]+"File in use!"+colorScheme["default"])
             output=""
             for i in bonus:
                 for j in i:
@@ -2181,39 +2281,15 @@ def exportAll(fileFormat):
                 file.write(output)
                 file.close()
             except PermissionError:
-                print("\033[33m\x1B[3mFile in use!\033[0m")
-        else:
-            print("\x1B[3mInvalid file format!\x1B[0m")
-            return
-        print("\033[92mSuccess!\033[0m")
+                print(colorScheme["typeerror"]+"File in use!"+colorScheme["default"])
+        print(colorScheme["success"]+"Success!"+colorScheme["default"])
         return
     elif game=="smf2" or game=="smf2c":
         filePath=filedialog.askdirectory()
         if filePath=="":
-            print("\x1B[3mNo Path Selected!\x1B[0m")
+            print(colorScheme["typeerror"]+"No Path Selected!"+colorScheme["default"])
             return
         if fileFormat=="csv":
-            output="SMF2DATA\nname=\""+level_name+"\"\ndescription=\""+level_description+"\"\nauthor=\""+level_author+"\"\nmessage=\""+level_message+"\"\n\nbg="+level_background+"\nurl1=\""+level_url1+"\"\nurl2=\""+level_bg_url2+"\"\nmusic="+level_music+"\nstartstatus="+level_powerup+"\nlayerpriority1="+level_layer_priority+"\nlayerpriority2="+level_layer_priority_2+"\nlayer2xpos="+level_layer2_xpos+"\nlayer2ypos="+level_layer2_ypos+"\nvar1="+level_variable_1+"\nvar2="+level_variable_2+"\nvar3="+level_variable_3
-            print("Gathering level header data...")
-            try:
-                file=open(str(filePath+"/"+level_name.replace("/","⧸").replace("\\","⧹").replace("*","⁎").replace("\"","‟").replace("<","❮").replace(">","❯").replace(":","˸").replace("|","⏐").replace("?","？")+"_header.txt"),mode='w', encoding="utf-8")
-                file.write(output)
-                file.close()
-            except PermissionError:
-                print("\033[33m\x1B[3mFile in use!\033[0m")
-            output="SMF2WARPS"
-            print("Processing warp data...")
-            for i in range(len(all_entrances)):
-                output+="\nentrance"+str(i+1)+"[x:"+all_entrances[i][1]+",y:"+all_entrances[i][2]+",anim:"+all_entrances[i][0]+",status:"+all_entrances[i][3]+"]"
-            output+="\n"
-            for i in range(len(all_exits)):
-                output+="\nexit[x:"+all_exits[i][0]+",y:"+all_exits[i][1]+",type:"+all_exits[i][2]+",to:"+all_exits[i][3]+"]"
-            try:
-                file=open(str(filePath+"/"+level_name.replace("/","⧸").replace("\\","⧹").replace("*","⁎").replace("\"","‟").replace("<","❮").replace(">","❯").replace(":","˸").replace("|","⏐").replace("?","？")+"_warps.txt"),mode='w', encoding="utf-8")
-                file.write(output)
-                file.close()
-            except PermissionError:
-                print("\033[33m\x1B[3mFile in use!\033[0m")
             output=""
             tiles_read=0
             for i in layer_1:
@@ -2230,7 +2306,7 @@ def exportAll(fileFormat):
                 file.write(output)
                 file.close()
             except PermissionError:
-                print("\033[33m\x1B[3mFile in use!\033[0m")
+                print(colorScheme["typeerror"]+"File in use!"+colorScheme["default"])
             output=""
             tiles_read=0
             for i in layer_2:
@@ -2248,7 +2324,7 @@ def exportAll(fileFormat):
                 file.write(output)
                 file.close()
             except PermissionError:
-                print("\033[33m\x1B[3mFile in use!\033[0m")
+                print(colorScheme["typeerror"]+"File in use!"+colorScheme["default"])
         elif fileFormat=="txt":
             output="&"+level_name+"&"+level_description+"&"+level_author+"&"+level_message+"&"
             if level_background==11:
@@ -2278,7 +2354,7 @@ def exportAll(fileFormat):
                 file.write(output)
                 file.close()
             except PermissionError:
-                print("\033[33m\x1B[3mFile in use!\033[0m")
+                print(colorScheme["typeerror"]+"File in use!"+colorScheme["default"])
         elif fileFormat=="map":
             output=""
             for i in layer_1:
@@ -2293,7 +2369,7 @@ def exportAll(fileFormat):
                 file.write(output)
                 file.close()
             except PermissionError:
-                print("\033[33m\x1B[3mFile in use!\033[0m")
+                print(colorScheme["typeerror"]+"File in use!"+colorScheme["default"])
             output=""
             for i in layer_2:
                 for j in i:
@@ -2307,19 +2383,19 @@ def exportAll(fileFormat):
                 file.write(output)
                 file.close()
             except PermissionError:
-                print("\033[33m\x1B[3mFile in use!\033[0m")
+                print(colorScheme["typeerror"]+"File in use!"+colorScheme["default"])
         else:
-            print("\x1B[3mInvalid file format!\x1B[0m")
+            print(colorScheme["typeerror"]+"Invalid file format!"+colorScheme["default"])
             return
-        print("\033[92mSuccess!\033[0m")
+        print(colorScheme["success"]+"Success!"+colorScheme["default"])
         return
     else:
-        print("\x1B[3mNo level in memory!\x1B[0m")
+        print(colorScheme["typeerror"]+"No level in memory!"+colorScheme["default"])
         return
 
 def importTiles(toModify):
     if toModify=="":
-        print("\x1B[3mNo property specified!\x1B[0m")
+        print(colorScheme["typeerror"]+"No property specified!"+colorScheme["default"])
         return
     
     global level
@@ -2336,38 +2412,38 @@ def importTiles(toModify):
             if game=="smf" or game=="smfe":
                 level.clear()
             elif game=="smf2" or game=="smf2c":
-                print("\x1B[3mIncorrect game mode - level is an SMF-only property!\x1B[0m")
+                print(colorScheme["typeerror"]+"Incorrect game mode - level is an SMF-only property!"+colorScheme["default"])
                 return
         elif toModify=="bonus" or toModify=="bns" or toModify=="b":
             if game=="smf" or game=="smfe":
                 bonus.clear()
             elif game=="smf2" or game=="smf2c":
-                print("\x1B[3mIncorrect game mode - bonus is an SMF-only property!\x1B[0m")
+                print(colorScheme["typeerror"]+"Incorrect game mode - bonus is an SMF-only property!"+colorScheme["default"])
                 return
         elif toModify=="layer 1" or toModify=="layer1" or toModify=="l1":
             if game=="smf2" or game=="smf2c":
                 layer_1.clear()
             elif game=="smf" or game=="smfe":
-                print("\x1B[3mIncorrect game mode - layer 1 is an SMF2-only property!\x1B[0m")
+                print(colorScheme["typeerror"]+"Incorrect game mode - layer 1 is an SMF2-only property!"+colorScheme["default"])
                 return
         elif toModify=="layer 2" or toModify=="layer2" or toModify=="l2":
             if game=="smf2" or game=="smf2c":
                 layer_2.clear()
             elif game=="smf" or game=="smfe":
-                print("\x1B[3mIncorrect game mode - layer 2 is an SMF2-only property!\x1B[0m")
+                print(colorScheme["typeerror"]+"Incorrect game mode - layer 2 is an SMF2-only property!"+colorScheme["default"])
                 return
         else:
-            print("\x1B[3mInvalid Property!\x1B[0m")
+            print(colorScheme["typeerror"]+"Invalid Property!"+colorScheme["default"])
             return
         filePath=filedialog.askopenfilename(title="Please open Super Mario Flash level tiles.")
         if filePath=="":
-            print("\x1B[3mNo File Opened!\x1B[0m")
+            print(colorScheme["typeerror"]+"No File Opened!"+colorScheme["default"])
             return
         file=open(filePath,mode='r', encoding="utf-8")
         try:
             file_data=file.read()
         except UnicodeDecodeError:
-            print("\033[31mInvalid file!\nConsider converting your level data to txt or csv.\033[0m")
+            print(colorScheme["error"]+"Invalid file!\nConsider converting your level data to txt or csv."+colorScheme["default"])
             return
         tile=""
         row=[]
@@ -2425,9 +2501,9 @@ def importTiles(toModify):
         elif toModify=="layer 2" or toModify=="layer2" or toModify=="l2":
             if level_layer2_height!=len(layer_2)*20:
                 level_layer2_height=len(layer_2)*20
-        print("\033[92mSuccess!\033[0m")
+        print(colorScheme["success"]+"Success!"+colorScheme["default"])
     else:
-        print("\x1B[3mNo level in memory!\x1B[0m")
+        print(colorScheme["typeerror"]+"No level in memory!"+colorScheme["default"])
         return
 
 def smfWarpModifier(yPos,xPos,sublevel,xPosTo,yPosTo,playerDir,animation):
@@ -2449,8 +2525,10 @@ def smfWarpModifier(yPos,xPos,sublevel,xPosTo,yPosTo,playerDir,animation):
     try:
         console=curses.initscr()
     except:
-        print("\033[31mCurrent console environment does not support Curses.\033[0m")
+        print(colorScheme["error"]+"Current console environment does not support Curses."+colorScheme["default"])
         return [yPos,xPos,sublevel,xPosTo,yPosTo,playerDir,animation]
+    curses.noecho()
+    curses.cbreak()
     console.keypad(True)
     console.clear()
     if decorType!=0:
@@ -2464,7 +2542,7 @@ def smfWarpModifier(yPos,xPos,sublevel,xPosTo,yPosTo,playerDir,animation):
     console.addstr(5,0,"Animation: ")
     console.addstr(7,0,"[Cancel]")
     console.addstr(8,0,"[Save]")
-    current_item=0
+    current_item=-1
     old_data=[yPos,xPos,sublevel,xPosTo,yPosTo,playerDir,animation]
     temp_new=0
     while True:
@@ -2579,8 +2657,10 @@ def smf2WarpModifier(mode,xPos,yPos,warpType,extraVar):
     try:
         console=curses.initscr()
     except:
-        print("\033[31mCurrent console environment does not support Curses.\033[0m")
+        print(colorScheme["error"]+"Current console environment does not support Curses."+colorScheme["default"])
         return
+    curses.noecho()
+    curses.cbreak()
     console.keypad(True)
     console.clear()
     if decorType!=0:
@@ -2595,7 +2675,7 @@ def smf2WarpModifier(mode,xPos,yPos,warpType,extraVar):
         console.addstr(3,0,"Linked to ID # ◄  ►")
     console.addstr(5,0,"[Cancel]")
     console.addstr(6,0,"[Save]")
-    current_item=0
+    current_item=-1
     old_data=[xPos,yPos,warpType,extraVar]
     temp_new=0
     while True:
@@ -2701,6 +2781,8 @@ def smf2WarpModifier(mode,xPos,yPos,warpType,extraVar):
                         extraVar=str(int(extraVar)+1)
 
 def replace(data):
+    sys.stdin.flush()
+    
     toModify=""
     toModifySub=""
     
@@ -2822,7 +2904,7 @@ def replace(data):
             toModify="tiles"
             data=data[1:]
         else:
-            print("\x1B[3mInvalid attribute!\x1B[0m")
+            print(colorScheme["typeerror"]+"Invalid attribute!"+colorScheme["default"])
             return
         if toModify=="header":
             if data[:5]=="name ":
@@ -3164,7 +3246,7 @@ def replace(data):
             elif data=="":
                 toModifySub=""
             else:
-                print("\x1B[3mInvalid attribute!\x1B[0m")
+                print(colorScheme["typeerror"]+"Invalid attribute!"+colorScheme["default"])
                 return
         elif toModify=="warps":
             if data[:6].lower()=="level ":
@@ -3213,7 +3295,7 @@ def replace(data):
                     else:
                         warpNum+=i
                 if warpNum=="":
-                    print("\x1B[3mPlease specify a warp number.\x1B[0m")
+                    print(colorScheme["typeerror"]+"Please specify a warp number."+colorScheme["default"])
                     return
                 data=data[len(warpNum):]
                 try:
@@ -3332,7 +3414,7 @@ def replace(data):
                     toModifySub="type"
                     data=""
                 elif data!="":
-                    print("\x1B[3mInvalid attribute!\x1B[0m")
+                    print(colorScheme["typeerror"]+"Invalid attribute!"+colorScheme["default"])
                     return
         elif toModify=="entrances" or toModify=="exits":
             if data=="+" or data=="add":
@@ -3358,9 +3440,9 @@ def replace(data):
                         warpNum+=i
                 if warpNum=="":
                     if toModify=="entrances":
-                        print("\x1B[3mPlease specify an entrance ID between 1 and "+str(len(all_entrances))+"\x1B[0m")
+                        print(colorScheme["typeerror"]+"Please specify an entrance ID between 1 and "+str(len(all_entrances))+""+colorScheme["default"])
                     else:
-                        print("\x1B[3mPlease specify an exit number between 0 and "+str(len(all_exits)-1)+"\x1B[0m")
+                        print(colorScheme["typeerror"]+"Please specify an exit number between 0 and "+str(len(all_exits)-1)+""+colorScheme["default"])
                     return
                 data=data[len(warpNum):]
                 try:
@@ -3443,7 +3525,7 @@ def replace(data):
                     toModifySub="linkto"
                     data=""
                 elif data!="":
-                    print("\x1B[3mInvalid attribute!\x1B[0m")
+                    print(colorScheme["typeerror"]+"Invalid attribute!"+colorScheme["default"])
                     return
         elif toModify=="tiles":
             if data[:8]=="layer 1 ":
@@ -3519,7 +3601,7 @@ def replace(data):
                 sublevel="bns"
                 data=data[1:]
             else:
-                print("\x1B[3mInvalid attribute!\x1B[0m")
+                print(colorScheme["typeerror"]+"Invalid attribute!"+colorScheme["default"])
                 return
             tileReplacerValues=["","","","",""]
             tileReplacerIndex=0
@@ -3560,7 +3642,7 @@ def replace(data):
                     except:
                         print("Successfully changed level width to "+level_width+" (not an integer - issues may occur)")
                 elif game=="smf2" or game=="smf2c":
-                    print("\x1B[3mChanging the level width in an SMF2 level without changing the level tiles will cause issues. Action denied.\x1B[0m")
+                    print(colorScheme["typeerror"]+"Changing the level width in an SMF2 level without changing the level tiles will cause issues. Action denied."+colorScheme["default"])
             elif toModifySub=="lvlbg":
                 if game=="smf" or game=="smfe":
                     if data!="":
@@ -3575,7 +3657,7 @@ def replace(data):
                     except:
                         print("Successfully changed level background to "+level_background+" ("+smfe_background_names[0]+")")
                 elif game=="smf2" or game=="smf2c":
-                    print("\x1B[3mSMF2 has no sublevel distinction.\x1B[0m")
+                    print(colorScheme["typeerror"]+"SMF2 has no sublevel distinction."+colorScheme["default"])
             elif toModifySub=="lvlmus":
                 if game=="smf" or game=="smfe":
                     if data!="":
@@ -3590,7 +3672,7 @@ def replace(data):
                     except:
                         print("Successfully changed level music to "+level_music+" ("+smfe_music_names[0]+")")
                 elif game=="smf2" or game=="smf2c":
-                    print("\x1B[3mSMF2 has no sublevel distinction.\x1B[0m")
+                    print(colorScheme["typeerror"]+"SMF2 has no sublevel distinction."+colorScheme["default"])
             elif toModifySub=="bnsbg":
                 if game=="smf" or game=="smfe":
                     if data!="":
@@ -3605,7 +3687,7 @@ def replace(data):
                     except:
                         print("Successfully changed bonus background to "+bonus_background+" ("+smfe_background_names[0]+")")
                 elif game=="smf2" or game=="smf2c":
-                    print("\x1B[3mSMF2 has no sublevel distinction.\x1B[0m")
+                    print(colorScheme["typeerror"]+"SMF2 has no sublevel distinction."+colorScheme["default"])
             elif toModifySub=="bnsmus":
                 if game=="smf" or game=="smfe":
                     if data!="":
@@ -3620,7 +3702,7 @@ def replace(data):
                     except:
                         print("Successfully changed bonus music to "+bonus_music+" ("+smfe_music_names[0]+")")
                 elif game=="smf2" or game=="smf2c":
-                    print("\x1B[3mSMF2 has no sublevel distinction.\x1B[0m")
+                    print(colorScheme["typeerror"]+"SMF2 has no sublevel distinction."+colorScheme["default"])
             elif toModifySub=="startx":
                 if game=="smf" or game=="smfe":
                     if data!="":
@@ -3632,7 +3714,7 @@ def replace(data):
                     except:
                         print("Successfully changed start xPos to "+start_xpos+" (0 tiles)")
                 elif game=="smf2" or game=="smf2c":
-                    print("\x1B[3mIn SMF2, player's start coordinates are stored in entrance data, not the header.\x1B[0m")
+                    print(colorScheme["typeerror"]+"In SMF2, player's start coordinates are stored in entrance data, not the header."+colorScheme["default"])
             elif toModifySub=="starty":
                 if game=="smf" or game=="smfe":
                     if data!="":
@@ -3644,7 +3726,7 @@ def replace(data):
                     except:
                         print("Successfully changed start yPos to "+start_ypos+" (0 tiles)")
                 elif game=="smf2" or game=="smf2c":
-                    print("\x1B[3mIn SMF2, player's start coordinates are stored in entrance data, not the header.\x1B[0m")
+                    print(colorScheme["typeerror"]+"In SMF2, player's start coordinates are stored in entrance data, not the header."+colorScheme["default"])
             elif toModifySub=="startat":
                 if game=="smf" or game=="smfe":
                     if data=="":
@@ -3654,11 +3736,11 @@ def replace(data):
                     elif data.lower()=="bonus" or data.lower()=="bns" or data.lower()=="b":
                         start_at="Bonus"
                     else:
-                        print("\x1B[3mInvalid sublevel!\x1B[0m")
+                        print(colorScheme["typeerror"]+"Invalid sublevel!"+colorScheme["default"])
                         return
                     print("Successfully changed start sublevel to "+start_at)
                 elif game=="smf2" or game=="smf2c":
-                    print("\x1B[3mSMF2 has no sublevel distinction.\x1B[0m")
+                    print(colorScheme["typeerror"]+"SMF2 has no sublevel distinction."+colorScheme["default"])
             elif toModifySub=="desc":
                 if game=="smf2" or game=="smf2c":
                     if data!="":
@@ -3667,7 +3749,7 @@ def replace(data):
                         level_description=input("Change level description to: ")
                     print("Successfully changed level description!")
                 elif game=="smf" or game=="smfe":
-                    print("\x1B[3mNo description attribute exists for SMF.\x1B[0m")
+                    print(colorScheme["typeerror"]+"No description attribute exists for SMF."+colorScheme["default"])
             elif toModifySub=="bg":
                 if game=="smf2" or game=="smf2c":
                     if data!="":
@@ -3690,7 +3772,7 @@ def replace(data):
                         except:
                             print("Successfully changed background to "+level_background+" ("+smf2_background_names[0]+")")
                 elif game=="smf" or game=="smfe":
-                    print("\x1B[3mNo background attribute exists for SMF. Please specify whether you're modifying a level or bonus background.\x1B[0m")
+                    print(colorScheme["typeerror"]+"No background attribute exists for SMF. Please specify whether you're modifying a level or bonus background."+colorScheme["default"])
             elif toModifySub=="mus":
                 if game=="smf2" or game=="smf2c":
                     if data!="":
@@ -3711,7 +3793,7 @@ def replace(data):
                         except:
                             print("Successfully changed music to "+level_music+" ("+smf2c_music_names[0]+")")
                 elif game=="smf" or game=="smfe":
-                    print("\x1B[3mNo music attribute exists for SMF. Please specify whether you're modifying the level or bonus music.\x1B[0m")
+                    print(colorScheme["typeerror"]+"No music attribute exists for SMF. Please specify whether you're modifying the level or bonus music."+colorScheme["default"])
             elif toModifySub=="powerup":
                 if game=="smf2" or game=="smf2c":
                     if data!="":
@@ -3723,7 +3805,7 @@ def replace(data):
                     except:
                         print("Successfully changed start state to "+level_powerup+" ("+smf2_powerup_names[29]+")")
                 elif game=="smf" or game=="smfe":
-                    print("\x1B[3mNo start state attribute exists for SMF.\x1B[0m")
+                    print(colorScheme["typeerror"]+"No start state attribute exists for SMF."+colorScheme["default"])
             elif toModifySub=="url1":
                 if game=="smf2" or game=="smf2c":
                     if data!="":
@@ -3734,7 +3816,7 @@ def replace(data):
                     level_background=11
                     print("Successfully changed background url 1 to "+level_url1)
                 elif game=="smf" or game=="smfe":
-                    print("\x1B[3mSMF has no custom backgrounds.\x1B[0m")
+                    print(colorScheme["typeerror"]+"SMF has no custom backgrounds."+colorScheme["default"])
             elif toModifySub=="url2":
                 if game=="smf2" or game=="smf2c":
                     if data!="":
@@ -3745,7 +3827,7 @@ def replace(data):
                     level_background=11
                     print("Successfully changed background url 2 to "+level_bg_url2)
                 elif game=="smf" or game=="smfe":
-                    print("\x1B[3mSMF has no custom backgrounds.\x1B[0m")
+                    print(colorScheme["typeerror"]+"SMF has no custom backgrounds."+colorScheme["default"])
             elif toModifySub=="layerpri1":
                 if game=="smf2" or game=="smf2c":
                     if data!="":
@@ -3754,7 +3836,7 @@ def replace(data):
                         level_layer_priority=input("Change layer priority 1 from "+level_layer_priority+" to: ")
                     print("Successfully changed layer priority 1 to "+level_layer_priority)
                 elif game=="smf" or game=="smfe":
-                    print("\x1B[3mSMF has no layers.\x1B[0m")
+                    print(colorScheme["typeerror"]+"SMF has no layers."+colorScheme["default"])
             elif toModifySub=="layerpri2":
                 if game=="smf2" or game=="smf2c":
                     if data!="":
@@ -3763,7 +3845,7 @@ def replace(data):
                         level_layer_priority_2=input("Change layer priority 2 from "+level_layer_priority_2+" to: ")
                     print("Successfully changed layer priority 2 to "+level_layer_priority_2)
                 elif game=="smf" or game=="smfe":
-                    print("\x1B[3mSMF has no layers.\x1B[0m")
+                    print(colorScheme["typeerror"]+"SMF has no layers."+colorScheme["default"])
             elif toModifySub=="layer2x":
                 if game=="smf2" or game=="smf2c":
                     if data!="":
@@ -3772,7 +3854,7 @@ def replace(data):
                         level_layer2_xpos=input("Change layer 2 xPos from "+level_layer2_xpos+" to: ")
                     print("Successfully changed layer 2 xPos to "+level_layer2_xpos)
                 elif game=="smf" or game=="smfe":
-                    print("\x1B[3mSMF has no layers.\x1B[0m")
+                    print(colorScheme["typeerror"]+"SMF has no layers."+colorScheme["default"])
             elif toModifySub=="layer2y":
                 if game=="smf2" or game=="smf2c":
                     if data!="":
@@ -3781,15 +3863,17 @@ def replace(data):
                         level_layer2_ypos=input("Change layer 2 yPos from "+level_layer2_ypos+" to: ")
                     print("Successfully changed layer 2 yPos to "+level_layer2_ypos)
                 elif game=="smf" or game=="smfe":
-                    print("\x1B[3mSMF has no layers.\x1B[0m")
+                    print(colorScheme["typeerror"]+"SMF has no layers."+colorScheme["default"])
             elif toModifySub=="":
                 global decorType
                 
                 try:
                     console=curses.initscr()
                 except:
-                    print("\033[31mCurrent console environment does not support Curses.\033[0m")
+                    print(colorScheme["error"]+"Current console environment does not support Curses."+colorScheme["default"])
                     return
+                curses.noecho()
+                curses.cbreak()
                 console.keypad(True)
                 console.clear()
                 if decorType!=0:
@@ -3816,7 +3900,7 @@ def replace(data):
                     console.addstr(8,0,"Bonus Width: ◄    ►")
                     console.addstr(10,0,"[Cancel]")
                     console.addstr(11,0,"[Save]")
-                    current_item=0
+                    current_item=-1
                     old_data=[level_background,level_music,level_width,bonus_background,bonus_music,bonus_width]
                     temp_new=0
                     while True:
@@ -3927,7 +4011,7 @@ def replace(data):
                     console.addstr(13,0,"Variable 3: ◄ ►")
                     console.addstr(15,0,"[Cancel]")
                     console.addstr(16,0,"[Save]")
-                    current_item=0
+                    current_item=-1
                     old_data=[level_background,level_url1,level_bg_url2,level_music,level_powerup,level_layer_priority,level_layer_priority_2,level_layer2_xpos,level_layer2_ypos,level_variable_1,level_variable_2,level_variable_3]
                     temp_new=0
                     while True:
@@ -4056,7 +4140,7 @@ def replace(data):
                                 if int(level_variable_3)<0:
                                     level_variable_3=str(int(level_variable_3)+1)
             else:
-                print("\x1B[3mInvalid attribute!\x1B[0m")
+                print(colorScheme["typeerror"]+"Invalid attribute!"+colorScheme["default"])
         elif toModify=="warps":
             if game=="smf" or game=="smfe":
                 if toModifySub=="add":
@@ -4067,9 +4151,9 @@ def replace(data):
                 elif warpNum!="":
                     if sublevel=="Level":
                         if int(warpNum)>len(level_warps)-1:
-                            print("\x1B[3mWarp number too high!\x1B[0m")
+                            print(colorScheme["typeerror"]+"Warp number too high!"+colorScheme["default"])
                         elif len(level_warps)==0:
-                            print("\x1B[3mNo warps exist for this sublevel. Please create a new one.\x1B[0m")
+                            print(colorScheme["typeerror"]+"No warps exist for this sublevel. Please create a new one."+colorScheme["default"])
                         else:
                             modified=list(level_warps[int(warpNum)])
                             if toModifySub=="remove":
@@ -4083,7 +4167,7 @@ def replace(data):
                                         modified[1]=input("Change xPos of warp from "+modified[1]+" to: ")
                                     print("Successfully changed xPos of warp to "+modified[1])
                                 elif game=="smf2" or game=="smf2c":
-                                    print("\x1B[3mWarps are an SMF-only property. Please refer to Entrances or Exits.\x1B[0m")
+                                    print(colorScheme["typeerror"]+"Warps are an SMF-only property. Please refer to Entrances or Exits."+colorScheme["default"])
                             elif toModifySub=="ypos":
                                 if game=="smf" or game=="smfe":
                                     if data!="":
@@ -4092,7 +4176,7 @@ def replace(data):
                                         modified[0]=input("Change yPos of warp from "+modified[0]+" to: ")
                                     print("Successfully changed yPos of warp to "+modified[0])
                                 elif game=="smf2" or game=="smf2c":
-                                    print("\x1B[3mWarps are an SMF-only property. Please refer to Entrances or Exits.\x1B[0m")
+                                    print(colorScheme["typeerror"]+"Warps are an SMF-only property. Please refer to Entrances or Exits."+colorScheme["default"])
                             elif toModifySub=="xposto":
                                 if game=="smf" or game=="smfe":
                                     if data!="":
@@ -4101,7 +4185,7 @@ def replace(data):
                                         modified[3]=input("Change xPos of warp's exit from "+modified[3]+" to: ")
                                     print("Successfully changed xPos of warp's exit to "+modified[3])
                                 elif game=="smf2" or game=="smf2c":
-                                    print("\x1B[3mWarps are an SMF-only property. Please refer to Entrances or Exits.\x1B[0m")
+                                    print(colorScheme["typeerror"]+"Warps are an SMF-only property. Please refer to Entrances or Exits."+colorScheme["default"])
                             elif toModifySub=="yposto":
                                 if game=="smf" or game=="smfe":
                                     if data!="":
@@ -4110,7 +4194,7 @@ def replace(data):
                                         modified[4]=input("Change yPos of warp's exit from "+modified[4]+" to: ")
                                     print("Successfully changed yPos of warp's exit to "+modified[4])
                                 elif game=="smf2" or game=="smf2c":
-                                    print("\x1B[3mWarps are an SMF-only property. Please refer to Entrances or Exits.\x1B[0m")
+                                    print(colorScheme["typeerror"]+"Warps are an SMF-only property. Please refer to Entrances or Exits."+colorScheme["default"])
                             elif toModifySub=="sublvl":
                                 if game=="smf" or game=="smfe":
                                     if data!="":
@@ -4124,7 +4208,7 @@ def replace(data):
                                         modified[2]=input("Change sublevel of warp from "+modified[2]+" to: ")
                                     print("Successfully changed sublevel of warp to "+modified[2])
                                 elif game=="smf2" or game=="smf2c":
-                                    print("\x1B[3mWarps are an SMF-only property. Please refer to Entrances or Exits.\x1B[0m")
+                                    print(colorScheme["typeerror"]+"Warps are an SMF-only property. Please refer to Entrances or Exits."+colorScheme["default"])
                             elif toModifySub=="dir":
                                 if game=="smf" or game=="smfe":
                                     if data!="":
@@ -4133,7 +4217,7 @@ def replace(data):
                                         modified[5]=input("Change direction of warp from "+modified[5]+" to: ")
                                     print("Successfully changed direction of warp to "+modified[5])
                                 elif game=="smf2" or game=="smf2c":
-                                    print("\x1B[3mWarps are an SMF-only property. Please refer to Entrances or Exits.\x1B[0m")
+                                    print(colorScheme["typeerror"]+"Warps are an SMF-only property. Please refer to Entrances or Exits."+colorScheme["default"])
                             elif toModifySub=="type":
                                 if game=="smf" or game=="smfe":
                                     if data!="":
@@ -4142,15 +4226,15 @@ def replace(data):
                                         modified[6]=input("Change animation of warp from "+modified[6]+" to: ")
                                     print("Successfully changed animation of warp to "+modified[6])
                                 elif game=="smf2" or game=="smf2c":
-                                    print("\x1B[3mWarps are an SMF-only property. Please refer to Entrances or Exits.\x1B[0m")
+                                    print(colorScheme["typeerror"]+"Warps are an SMF-only property. Please refer to Entrances or Exits."+colorScheme["default"])
                             else:
                                 modified=smfWarpModifier(modified[0],modified[1],modified[2],modified[3],modified[4],modified[5],modified[6])
                             level_warps[int(warpNum)]=tuple(modified)
                     elif sublevel=="Bonus":
                         if int(warpNum)>len(bonus_warps)-1:
-                            print("\x1B[3mWarp number too high!\x1B[0m")
+                            print(colorScheme["typeerror"]+"Warp number too high!"+colorScheme["default"])
                         elif len(bonus_warps)==0:
-                            print("\x1B[3mNo warps exist for this sublevel. Please create a new one.\x1B[0m")
+                            print(colorScheme["typeerror"]+"No warps exist for this sublevel. Please create a new one."+colorScheme["default"])
                         else:
                             modified=list(bonus_warps[int(warpNum)])
                             if game=="smf" or game=="smfe":
@@ -4208,18 +4292,18 @@ def replace(data):
                                     modified=smfWarpModifier(modified[0],modified[1],modified[2],modified[3],modified[4],modified[5],modified[6])
                                 bonus_warps[int(warpNum)]=tuple(modified)
                 else:
-                    print("\x1B[3mInvalid attribute!\x1B[0m")
+                    print(colorScheme["typeerror"]+"Invalid attribute!"+colorScheme["default"])
             elif game=="smf2" or game=="smf2c":
-                print("\x1B[3mWarps are an SMF-only property. Please refer to Entrances or Exits.\x1B[0m")
+                print(colorScheme["typeerror"]+"Warps are an SMF-only property. Please refer to Entrances or Exits."+colorScheme["default"])
         elif toModify=="entrances":
             if game=="smf2" or game=="smf2c":
                 if toModifySub=="add":
                     all_entrances.append(tuple(smf2WarpModifier("Entrances","0","0","0","1")))
                 elif warpNum!="":
                     if int(warpNum)>len(all_entrances):
-                        print("\x1B[3mEntrance number too high!\x1B[0m")
+                        print(colorScheme["typeerror"]+"Entrance number too high!"+colorScheme["default"])
                     elif len(all_entrances)==0:
-                        print("\x1B[3mNo entrances exist for this sublevel. Please create a new one, otherwise the level will be unplayable.\x1B[0m")
+                        print(colorScheme["typeerror"]+"No entrances exist for this sublevel. Please create a new one, otherwise the level will be unplayable."+colorScheme["default"])
                     else:
                         modified=list(all_entrances[int(warpNum)-1])
                         if toModifySub=="remove":
@@ -4230,14 +4314,14 @@ def replace(data):
                                 data=input("Swap Entrance ID "+warpNum+" with Entrance ID: ")
                             try:
                                 if int(data)>len(all_entrances):
-                                    print("\x1B[3mEntrance number too high!\x1B[0m")
+                                    print(colorScheme["typeerror"]+"Entrance number too high!"+colorScheme["default"])
                                 else:
                                     modified2=list(all_entrances[int(data)-1])
                                     all_entrances[int(data)-1]=tuple(modified)
                                     modified=modified2
                                     print("Successfully swapped Entrance "+warpNum+" and Entrance "+data)
                             except:
-                                print("\x1B[3mEntrance number not an integer!\x1B[0m")
+                                print(colorScheme["typeerror"]+"Entrance number not an integer!"+colorScheme["default"])
                         elif toModifySub=="xpos":
                             if data!="":
                                 modified[1]=data
@@ -4272,16 +4356,16 @@ def replace(data):
                             modified=smf2WarpModifier("Entrances",modified[1],modified[2],modified[0],modified[3])
                         all_entrances[int(warpNum)-1]=tuple(modified)
             elif game=="smf" or game=="smfe":
-                print("\x1B[3mEntrances are an SMF2-only property. Please refer to Warps.\x1B[0m")
+                print(colorScheme["typeerror"]+"Entrances are an SMF2-only property. Please refer to Warps."+colorScheme["default"])
         elif toModify=="exits":
             if game=="smf2" or game=="smf2c":
                 if toModifySub=="add":
                     all_exits.append(tuple(smf2WarpModifier("Exits","0","0","1","1")))
                 elif warpNum!="":
                     if int(warpNum)>len(all_exits)-1:
-                        print("\x1B[3mExit number too high!\x1B[0m")
+                        print(colorScheme["typeerror"]+"Exit number too high!"+colorScheme["default"])
                     elif len(all_exits)==0:
-                        print("\x1B[3mNo exits exist for this sublevel. Please create a new one.\x1B[0m")
+                        print(colorScheme["typeerror"]+"No exits exist for this sublevel. Please create a new one."+colorScheme["default"])
                     else:
                         modified=list(all_exits[int(warpNum)])
                         if toModifySub=="remove":
@@ -4318,13 +4402,13 @@ def replace(data):
                             modified=smf2WarpModifier("Exits",modified[0],modified[1],modified[2],modified[3])
                         all_exits[int(warpNum)]=tuple(modified)
             elif game=="smf" or game=="smfe":
-                print("\x1B[3mExits are an SMF2-only property. Please refer to Warps.\x1B[0m")
+                print(colorScheme["typeerror"]+"Exits are an SMF2-only property. Please refer to Warps."+colorScheme["default"])
         elif toModify=="tiles":
             if tileReplacerValues[0]=="" and tileReplacerValues[1]!="":
-                print("\x1B[3mBeginning of X range was not specified.\x1B[0m")
+                print(colorScheme["typeerror"]+"Beginning of X range was not specified."+colorScheme["default"])
                 return
             if tileReplacerValues[2]=="" and tileReplacerValues[3]!="":
-                print("\x1B[3mBeginning of Y range was not specified.\x1B[0m")
+                print(colorScheme["typeerror"]+"Beginning of Y range was not specified."+colorScheme["default"])
                 return
             if tileReplacerValues[0]=="":
                 tileReplacerValues[0]=0
@@ -4362,19 +4446,19 @@ def replace(data):
                 for i in range(len(tileReplacerValues)-1):
                     tileReplacerValues[i]=int(tileReplacerValues[i])
             except:
-                print("\x1B[3mX and Y ranges are not integers.\x1B[0m")
+                print(colorScheme["typeerror"]+"X and Y ranges are not integers."+colorScheme["default"])
                 return
             if tileReplacerValues[0]>tileReplacerValues[1]:
-                print("\x1B[3mX range out of order - the beginning of the range should come first.\x1B[0m")
+                print(colorScheme["typeerror"]+"X range out of order - the beginning of the range should come first."+colorScheme["default"])
                 return
             if tileReplacerValues[2]>tileReplacerValues[3]:
                 if tileReplacerValues[3]==-1:
                     if game=="smf" or game=="smfe":
-                        print("\x1B[3mSMF2 has no sublevel distinction.\x1B[0m")
+                        print(colorScheme["typeerror"]+"SMF2 has no sublevel distinction."+colorScheme["default"])
                     elif game=="smf2" or game=="smf2c":
-                        print("\x1B[3mSMF has no layers.\x1B[0m")
+                        print(colorScheme["typeerror"]+"SMF has no layers."+colorScheme["default"])
                 else:
-                    print("\x1B[3mY range out of order - the beginning of the range should come first.\x1B[0m")
+                    print(colorScheme["typeerror"]+"Y range out of order - the beginning of the range should come first."+colorScheme["default"])
                 return
             output=""
             length=0
@@ -4406,7 +4490,7 @@ def replace(data):
                                         length=0
                                 level[i]=tuple(modified)
                     else:
-                        print("\x1B[3mSMF2 has no sublevel distinction.\x1B[0m")
+                        print(colorScheme["typeerror"]+"SMF2 has no sublevel distinction."+colorScheme["default"])
                         return
                 elif sublevel=="bns":
                     if game=="smf" or game=="smfe":
@@ -4434,7 +4518,7 @@ def replace(data):
                                         length=0
                                 bonus[i]=tuple(modified)
                     else:
-                        print("\x1B[3mSMF2 has no sublevel distinction.\x1B[0m")
+                        print(colorScheme["typeerror"]+"SMF2 has no sublevel distinction."+colorScheme["default"])
                         return
                 elif sublevel=="lay1":
                     if game=="smf2" or game=="smf2c":
@@ -4462,7 +4546,7 @@ def replace(data):
                                         length=0
                                 layer_1[i]=tuple(modified)
                     else:
-                        print("\x1B[3mSMF has no layers.\x1B[0m")
+                        print(colorScheme["typeerror"]+"SMF has no layers."+colorScheme["default"])
                         return
                 elif sublevel=="lay2":
                     if game=="smf2" or game=="smf2c":
@@ -4490,7 +4574,7 @@ def replace(data):
                                         length=0
                                 layer_2[i]=tuple(modified)
                     else:
-                        print("\x1B[3mSMF has no layers.\x1B[0m")
+                        print(colorScheme["typeerror"]+"SMF has no layers."+colorScheme["default"])
                         return
                 if loopCount==0:
                     print(output)
@@ -4506,71 +4590,119 @@ def replace(data):
                         print("Replaced "+str(tilesReplaced)+" tiles with tile ID "+tileReplacerValues[4]+" ("+smf_tiles[0][1]+")")
         return
     else:
-        print("\x1B[3mNo level in memory!\x1B[0m")
+        print(colorScheme["typeerror"]+"No level in memory!"+colorScheme["default"])
         return
 
 def awaitInput():
+    global current_command
+    global usedCommands
+    
+    awaitInput_commands={ # maybe place these at the beginning of code and make the detector a function? ############
+        "open": lambda arg: openFile(arg),
+        "export": lambda arg: exportAll(arg),
+        "import": lambda arg: importTiles(arg),
+        "settings": lambda arg: changeConfig(),
+        "replace": lambda arg: replace(arg),
+        "header": lambda arg: printInfo(),
+        "help": lambda arg: generalHelp(arg),
+        "exit": lambda arg: (clear(),exit(0))[1],
+    }
+    
+    # [accepted values,definition,cut latter text for use in argument]
+    awaitInput_deabbreviator=[
+        [["open ","o "],"open",True],
+        [["open","o"],"open",False],
+        [["export ","exp ","e "],"export",True],
+        [["export","exp","e"],"export",False],
+        [["import ","imp ","i ","i"],"import",True],
+        [["import","imp"],"import",False],
+        [["settings","set","s"],"settings",False],
+        [["replace ","rep ","r "],"replace",True],
+        [["replace","rep"],"replace",False],
+        [["r"],"replace",True],
+        [["header","h"],"header",False],
+        [["help ","? ","?"],"help",True],
+        [["help"],"help",False],
+        [["exit","x"],"exit",True],
+    ]
+    
+    def testInputMatch(toExecute):
+        for i in awaitInput_deabbreviator: # iterates through all entries of awaitInput_deabbreviator
+            for j in range(len(i[0])): # iterates through all command versions (e.g. i[0])
+                if i[2]: # check if the boolean placed in each entry is true or false
+                    if command[:len(i[0][j])]==i[0][j]: # if typed command cut to length of command version matches
+                        if toExecute:
+                            awaitInput_commands[i[1]](command[len(i[0][j]):])
+                        return True,i[0][j],command[len(i[0][j]):] # matched/not, command, argument
+                else:
+                    if command==i[0][j]: # if typed command EXPLICITLY matches with command version, highlight
+                        if toExecute:
+                            awaitInput_commands[i[1]]("")
+                        return True,i[0][j],"" # matched/not, command, dummy argument
+        return False,command # matched/not, command
+
     while True:
-        command=input("→ ")
-        if command=="open" or command=="o":
-            openFile("")
-        elif command[:5]=="open ":
-            openFile(command[5:])
-        elif command[:2]=="o ":
-            openFile(command[2:])
-        elif command[:7]=="export ":
-            exportAll(command[7:])
-        elif command[:4]=="exp ":
-            exportAll(command[4:])
-        elif command[:2]=="e ":
-            exportAll(command[2:])
-        elif command[:7]=="import ":
-            importTiles(command[7:])
-        elif command[:6]=="import":
-            importTiles("")
-        elif command[:4]=="imp ":
-            importTiles(command[4:])
-        elif command[:2]=="i ":
-            importTiles(command[2:])
-        elif command[:1]=="i":
-            importTiles(command[1:])
-        elif command=="settings" or command=="set" or command=="s":
-            changeConfig()
-        elif command=="replace" or command=="rep":
-            print("\x1B[3mNo data specified!\x1B[0m")
-        elif command[:8]=="replace ":
-            replace(command[8:])
-        elif command[:4]=="rep ":
-            replace(command[4:])
-        elif command[:2]=="r ":
-            replace(command[2:])
-        elif command[:1]=="r":
-            replace(command[1:])
-        elif command=="header" or command=="head" or command=="h":
-            printInfo()
-        elif command[:5]=="help ":
-            generalHelp(command[5:])
-        elif command[:4]=="help":
-            generalHelp("")
-        elif command[:2]=="? ":
-            generalHelp(command[2:])
-        elif command[:1]=="?":
-            generalHelp(command[1:])
-        elif command[:4]=="exit" or command[:1]=="x":
-            exit(0)
-        else:
-            print("\x1B[3mInvalid command!\x1B[0m")
+        command=""
+        print("→ ", end='', flush=True)
+        while True:
+            event=keyboard.read_event()
+            if event.event_type==keyboard.KEY_DOWN:
+                key=event.name
+                if key=="enter":
+                    print("")
+                    break
+                elif key=="backspace":
+                    command=command[:-1]
+                    print("\r→ "+command+" "*(len(command)+1), end='', flush=True)
+                elif key=="space":
+                    command+=" "
+                    print(" ", end='', flush=True)
+                elif key=="down":
+                    try:
+                        current_command=(current_command+1)%len(usedCommands)
+                        command=usedCommands[current_command]
+                    except:
+                        pass
+                elif key=="up":
+                    try:
+                        current_command=(current_command-1)%len(usedCommands)
+                        command=usedCommands[current_command]
+                    except:
+                        pass
+                elif key not in ["shift","ctrl","alt","caps lock","tab","esc","left","right","print screen","left windows","right ctrl","right alt","right shift","f11"]:
+                    command+=key
+                output=""
+                if not testInputMatch(False)[0]:
+                    output+=colorScheme["typeinvalid"]+command
+                else:
+                    output+=colorScheme["command"]+testInputMatch(False)[1]+colorScheme["default"]+testInputMatch(False)[2]
+                output+=colorScheme["default"]
+                print("\r→ "+output, end='', flush=True)
+        
+        usedCommands.append(command)
+        if len(usedCommands)>10: ### MAKE THIS NUMBER MODIFIABLE VIA SETTINGS ###
+            usedCommands.pop(0)
+        current_command=len(usedCommands)
+        
+        if not testInputMatch(True)[0]:
+            print(colorScheme["typeerror"]+"Invalid command!"+colorScheme["default"])
 
 configLoad()
+defineColors()
+clear()
 if decorType!=0:
     title=" SMF Level Reader v"+versionNames[programVersion]+" "
     length=len(title)
     padding=(screenx-length)//2
-    centered_text=decorTypes[decorType]*padding+"\033[1m"+title+"\033[0m"+decorTypes[decorType]*padding
+    centered_text=decorTypes[decorType]*padding+colorScheme["bold"]+title+colorScheme["default"]+decorTypes[decorType]*padding
     print(centered_text)
 else:
-    print("\033[1mSMF Level Reader v"+versionNames[programVersion]+"\033[0m")
-print("Visit \u001b[36m\u001b[4mhttps://github.com/AeroPurple/SMFLevelReader\033[0m to report issues and download updates!")
+    print(colorScheme["bold"]+"SMF Level Reader v"+versionNames[programVersion]+colorScheme["default"])
+print("Visit "+colorScheme["link"]+"https://github.com/AeroPurple/SMFLevelReader"+colorScheme["default"]+" to report issues and download updates!")
+if firstRun:
+    print("First time? Type in "+colorScheme["command"]+"help"+colorScheme["default"]+" to get the list of commands, or type in "+colorScheme["command"]+"settings"+colorScheme["default"]+" to change how this program works.")
 time.sleep(titleScreenWaitTime/1000*16)
 print("What would you like to do?")
+usedCommands=[]
+current_command=0
 awaitInput()

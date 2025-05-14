@@ -11,8 +11,18 @@ import traceback
 import time
 import re
 import shutil
+import win32gui
 from sys import exit
 from subprocess import call
+try:
+    from strlib import str as strlib
+    from strlib import date as release_date
+    from strlib import smfe_background_names, smfe_music_names, smf2_background_names, smf2c_background_names, smf2c_music_names, smf2_powerup_names, smf2_entrance_types, smf2_entrance_powerups, smf2_exit_types, smf_tiles, smf2_tiles
+except:
+    print("Critical Error: string library not found")
+    exit(1)
+import colorscheme
+from colorscheme import colorScheme
 
 def get_application_path():
     if hasattr(sys, 'frozen'):
@@ -20,79 +30,15 @@ def get_application_path():
     else:
         return os.path.dirname(__file__)
 
-useANSI=1
-ANSICodes={
-    0:["","","","","","","","","","","","","","","","","","","",""],
-    1:["\033[0m","\033[1m","\x1B[3m","\x1B[4m","\033[30m","\033[31m","\033[32m","\033[33m","\033[34m","\033[35m","\033[36m","\033[37m","\033[90m","\033[91m","\033[92m","\033[93m","\033[94m","\033[95m","\033[96m","\033[97m"]
-}
-
-colorScheme={
-    "default":"",
-    "bold":"",
-    "error":"",
-    "warning":"",
-    "success":"",
-    "link":"",
-    "null":"",
-    "typeerror":"",
-    "command":"",
-    "subcommand":"",
-    "section":"",
-    "value":"",
-    "typeinvalid":""
-}
-
-def defineColors():
-    global colorScheme
-    
-    DEFAULT=ANSICodes[useANSI][0]
-    BOLD=ANSICodes[useANSI][1]
-    ITALIC=ANSICodes[useANSI][2]
-    UNDERLINE=ANSICodes[useANSI][3]
-    DIM_BLACK=ANSICodes[useANSI][4]
-    DIM_RED=ANSICodes[useANSI][5]
-    DIM_GREEN=ANSICodes[useANSI][6]
-    DIM_YELLOW=ANSICodes[useANSI][7]
-    DIM_BLUE=ANSICodes[useANSI][8]
-    DIM_MAGENTA=ANSICodes[useANSI][9]
-    DIM_CYAN=ANSICodes[useANSI][10]
-    DIM_WHITE=ANSICodes[useANSI][11]
-    BLACK=ANSICodes[useANSI][12]
-    RED=ANSICodes[useANSI][13]
-    GREEN=ANSICodes[useANSI][14]
-    YELLOW=ANSICodes[useANSI][15]
-    BLUE=ANSICodes[useANSI][16]
-    MAGENTA=ANSICodes[useANSI][17]
-    CYAN=ANSICodes[useANSI][18]
-    WHITE=ANSICodes[useANSI][19]
-
-    colorScheme={
-        "default":DEFAULT,
-        "bold":BOLD,
-        "error":RED, # used to be DIM_RED
-        "warning":YELLOW, # used to be DIM_YELLOW
-        "success":GREEN,
-        "link":BLUE+UNDERLINE, # used to be DIM_CYAN
-        "null":BLACK, # used to be ITALIC
-        "typeerror":DIM_YELLOW, # used to be ITALIC
-        "command":YELLOW,
-        "subcommand":BOLD,
-        "section":DEFAULT,
-        "value":CYAN,
-        "typeinvalid":DIM_RED
-    }
-
 try:
     import curses
 except:
-    print(colorScheme["error"]+"No Curses module installed."+colorScheme["default"])
-    print("Please install it using the "+colorScheme["bold"]+"pip install curses"+colorScheme["default"]+" command.")
+    print(strlib["err_mod_curses"])
 
 try:
     import keyboard
 except:
-    print(colorScheme["error"]+"No Keyboard module installed."+colorScheme["default"])
-    print("Please install it using the "+colorScheme["bold"]+"pip install keyboard"+colorScheme["default"]+" command.")
+    print(strlib["err_mod_keyboard"])
 
 titleScreenWaitTime=0
 decorType=0
@@ -128,12 +74,266 @@ def clear():
     for i in range(screeny): # Windows Terminal force wipe
         output=""
         for j in range(screenx):
+            output+="█"
+        print(output)
+    for i in range(screeny):
+        output=""
+        for j in range(screenx):
             output+=" "
         print(output)
     if os.name == 'nt':
         os.system('cls')
     else:
         os.system('clear')
+        
+def checkForeground():
+    window_handle=win32gui.GetForegroundWindow()
+    window_title=win32gui.GetWindowText(window_handle)
+    return window_title
+
+current_window=checkForeground()
+
+def isFocusedConsole():
+    return checkForeground()==current_window
+
+awaitInput_commands={
+    "open": lambda arg: processFile(arg),
+    "export": lambda arg, value: exportAll(arg, value),
+    "import": lambda arg, value: importTiles(arg, value),
+    "settings": lambda dummy: changeConfig(),
+    "replace": lambda arg1, arg2: replace(arg1, arg2),
+    "header": lambda arg: printInfo(),
+    "help": lambda arg, dummy: generalHelp(arg),
+    "exit": lambda dummy: (clear(),exit(0))[1],
+}
+
+# [accepted values,definition,cut latter text for use in argument,is next part a command,commands allowed,scan twice?...]
+awaitInput_deabbreviator=[
+    [["open ","o "],"open",True,False],
+    [["open","o"],"open",False],
+    [["export ","exp ","e "],"export",True,True,False,
+        [
+            [["csv "],"csv",True],
+            [["csv"],"csv",False],
+            [["txt "],"txt",True],
+            [["txt"],"txt",False],
+            [["map "],"map",True],
+            [["map"],"map",False]
+        ]
+    ],
+    [["exit","x"],"exit",True,False],
+    [["export","exp","e"],"export",True,True,False,
+        [
+            [[""],"",False]
+        ]
+    ],
+    [["import","imp"],"import",True,True,False,
+        [
+            [[""],"",False]
+        ]
+    ],
+    [["import ","imp ","i ","i"],"import",True,True,False,
+        [
+            [["level ","lvl ","l "],"lvl",True],
+            [["level","lvl","l"],"lvl",False],
+            [["bonus ","bns ","b "],"bns",True],
+            [["bonus","bns","b"],"bns",False],
+            [["layer 1 ","layer1 ","l1 "],"l1",True],
+            [["layer 1","layer1","l1"],"l1",False],
+            [["layer 2 ","layer2 ","l2 "],"l2",True],
+            [["layer 2","layer2","l2"],"l2",False]
+        ]
+    ],
+    [["settings","set","s"],"settings",False],
+    [["replace","rep"],"replace",True,True,False,
+        [
+            [[""],"",False]
+        ]
+    ],
+    [["replace ","rep ","r ","r"],"replace",True,True,True,
+        [
+            [["header","head"],"header",False],
+            [["header ","head ","h ","h"],"header",True,
+                [
+                    
+                ]
+            ],
+            [["warps"],"warps",False],
+            [["warp ","warp","w ","w"],"warps",True,
+                [
+                    
+                ]
+            ],
+            [["entrances"],"entrances",False],
+            [["entrance ","entrance","entr ","entr","n ","n"],"entrances",True,
+                [
+                    
+                ]
+            ],
+            [["exits"],"exits",False],
+            [["exit ","exit","x ","x"],"exits",True,
+                [
+                    
+                ]
+            ],
+            [["tiles ","tiles","t ","t"],"tiles",True,
+                [
+                    
+                ]
+            ],
+        ]
+    ],
+    [["header","h"],"header",False],
+    [["help ","? ","?"],"help",True,True,False,
+        [
+            [[""],"",False],
+            [["open","o"],"open",False],
+            [["export","exp","e"],"export",False],
+            [["import","imp","i"],"import",False],
+            [["settings","set","s"],"settings",False],
+            [["replace","rep","r"],"replace",False],
+            [["header","head","h"],"header",False],
+            [["help","?"],"help",False],
+            [["exit","x"],"exit",False]
+        ]
+    ],
+    [["help"],"help",True,True,False,
+        [
+            [[""],"",False]
+        ]
+    ],
+]
+
+def testInputMatch(command, toExecute):
+    for i in awaitInput_deabbreviator: # iterates through all entries of awaitInput_deabbreviator
+        for j in range(len(i[0])): # iterates through all command versions (e.g. i[0])
+            if i[2]: # check if the first boolean placed in each entry is true or false
+                if command[:len(i[0][j])]==i[0][j]: # if typed command cut to length of command version matches
+                    if i[3]: # if more commands are allowed
+                        for k in i[5]: # iterate through subcommands
+                            for l in range(len(k[0])): # iterate through versions
+                                #print(k[0][l])
+                                #print(command[len(i[0][j]):len(i[0][j])+len(k[0][l])],"compared to",k[0][l])
+                                if i[4]: #subsubcommands allowed?
+                                    if k[2]: #cropped match
+                                        if command[len(i[0][j]):len(i[0][j])+len(k[0][l])]==k[0][l]:
+                                            if toExecute:
+                                                awaitInput_commands[i[1]](k[1],command[len(i[0][j])+len(k[0][l]):])
+                                            return True,i[0][j],True,True,command[len(i[0][j]):len(i[0][j])+len(k[0][l])],True,command[len(i[0][j])+len(k[0][l]):]
+                                    else: #explicit match
+                                        if command[len(i[0][j]):]==k[0][l]:
+                                            if toExecute:
+                                                awaitInput_commands[i[1]](k[1],command[len(i[0][j])+len(k[0][l]):])
+                                            return True,i[0][j],True,True,command[len(i[0][j]):len(i[0][j])+len(k[0][l])],True,command[len(i[0][j])+len(k[0][l]):]
+                                else: #subsubcommand is a value
+                                    if k[2]: #cropped match
+                                        if command[len(i[0][j]):len(i[0][j])+len(k[0][l])]==k[0][l]:
+                                            if toExecute:
+                                                awaitInput_commands[i[1]](k[1],command[len(i[0][j])+len(k[0][l]):])
+                                            return True,i[0][j],True,True,command[len(i[0][j]):len(i[0][j])+len(k[0][l])],False,command[len(i[0][j])+len(k[0][l]):]
+                                    else: #explicit match
+                                        if command[len(i[0][j]):]==k[0][l]:
+                                            if toExecute:
+                                                awaitInput_commands[i[1]](k[1],command[len(i[0][j])+len(k[0][l]):])
+                                            return True,i[0][j],True,True,command[len(i[0][j]):len(i[0][j])+len(k[0][l])],False,command[len(i[0][j])+len(k[0][l]):]
+                        return True,i[0][j],True,False,command[len(i[0][j]):] #matched/not, command, has subcommand, matched/not subcommand, subcommand
+                    else:
+                        if toExecute:
+                            awaitInput_commands[i[1]](command[len(i[0][j]):]) # execute from command library with args
+                        return True,i[0][j],False,command[len(i[0][j]):] # matched/not, command, is next part a command, argument
+            else:
+                if command==i[0][j]: # if typed command EXPLICITLY matches with command version, highlight
+                    if toExecute:
+                        awaitInput_commands[i[1]]("") # execute from command library with args
+                    return True,i[0][j],False,"" # matched/not, command, is next part a command, dummy argument
+    return False,command # matched/not, command
+        
+def input(prefaceString, failSafeCommand):
+    command=""
+    awaitInputMode=False
+    print(prefaceString, end='', flush=True)
+    
+    if prefaceString=="→ ":
+        awaitInputMode=True
+    while True:
+        erased=0
+        event=keyboard.read_event()
+        if event.event_type==keyboard.KEY_DOWN and isFocusedConsole():
+            old_slash_n=command.count("\n")
+            key=event.name
+            if key=="enter":
+                print("")
+                break
+            elif key=="esc" and not awaitInputMode:
+                print(strlib["exit_input"])
+                return failSafeCommand
+            elif key=="backspace":
+                erased=1
+                command=command[:-1]
+            elif key=="space":
+                command+=" "
+            elif key=="down":
+                try:
+                    current_command=(current_command+1)%len(usedCommands)
+                    command=usedCommands[current_command]
+                except:
+                    pass
+            elif key=="up":
+                try:
+                    current_command=(current_command-1)%len(usedCommands)
+                    command=usedCommands[current_command]
+                except:
+                    pass
+            elif len(key)<=1:
+                if key=="&" and (game=="smf2" or game=="smf2c"):
+                    command+="and"
+                elif key=="(" and (game=="smf" or game=="smfe"):
+                    command+="["
+                elif key==")" and (game=="smf" or game=="smfe"):
+                    command+="]"
+                else:
+                    command+=key
+            #print(new_slash_n)
+            command=command.replace("\\n","\n")
+            new_slash_n=command.count("\n")-old_slash_n
+            output=""
+            if awaitInputMode:
+                if not testInputMatch(command, False)[0]:
+                    output+=colorScheme["typeinvalid"]+command
+                else:
+                    output+=colorScheme["command"]+testInputMatch(command, False)[1]
+                    if testInputMatch(command, False)[2]:
+                        if testInputMatch(command, False)[3]:
+                            if testInputMatch(command, False)[5]:
+                                output+=colorScheme["subcommand"]+testInputMatch(command, False)[4]+colorScheme["section"]+testInputMatch(command, False)[6]
+                            else:
+                                output+=colorScheme["subcommand"]+testInputMatch(command, False)[4]+colorScheme["value"]+testInputMatch(command, False)[6]
+                        else:
+                            output+=colorScheme["typeinvalid"]+testInputMatch(command, False)[4]
+                    else:
+                        output+=colorScheme["value"]+testInputMatch(command, False)[3]
+            else:
+                output+=colorScheme["value"]+command
+            output+=colorScheme["default"]
+            #print("\\n-count: "+str(command.count("\n")))
+            #print("move up and down by "+str(math.ceil((len(prefaceString)+len(command)-1)/screenx)+(command.count("\n"))))
+            #print("then move up by "+str(math.ceil((len(prefaceString)+len(command)-1+erased*2)/screenx)+(command.count("\n")))+"\n")
+            
+    # OKAAAAAYYYY. so
+    # girl help
+    # why is typing characters near the end while on a new line causing weird bugs
+    # is this because of the length parameter?
+    # this is gonna be a nightmare to fix
+    # fuuuuuck
+            
+            print(u"\u001b["+str(math.ceil((len(prefaceString)+len(command)-1)/screenx)+(command.count("\n")-new_slash_n))+"A")
+            #time.sleep(0.3)
+            print(" "*(screenx*(math.ceil((len(prefaceString)+len(command)-1)/screenx)+(command.count("\n")-new_slash_n))), end='', flush=True)
+            #time.sleep(0.3)
+            print(u"\u001b["+str(math.ceil((len(prefaceString)+len(command)-1+erased*2)/screenx)+(command.count("\n")-new_slash_n))+"A")
+            #time.sleep(0.3)
+            print("\r"+prefaceString+output, end='', flush=True)
+    return command
 
 versionNames=[0,"0.9","0.10 Beta"]
 configVersion=0
@@ -175,7 +375,7 @@ def configLoad():
                 configData=bin(int.from_bytes(configData,'big'))[2:].zfill(24)
                 configVersion=int(configData[:6],2)
             if configVersion+1>len(versionNames) or versionNames[configVersion]==0:
-                print("Configuration file may be invalid.")
+                print(strlib["err_conf_load"])
             titleScreenWaitTime=int(configData[6:14],2)
             decorType=int(configData[14:16],2)
             useANSI=int(configData[16:17])
@@ -193,62 +393,62 @@ def changeConfig():
     try:
         console=curses.initscr()
     except:
-        print(colorScheme["error"]+"Current console environment does not support Curses."+colorScheme["default"])
+        print(strlib["err_curses_load"])
         return
     curses.noecho()
     curses.cbreak()
     console.keypad(True)
     console.clear()
     if decorType!=0:
-        console.addstr(0,0," Settings ".center(screenx,decorTypes[decorType]))
+        console.addstr(0,0,f" {strlib['title_s']} ".center(screenx,decorTypes[decorType]))
     else:
-        console.addstr(0,0,"Settings")
+        console.addstr(0,0,strlib["title_s"])
     if configVersion+1>len(versionNames):
-        console.addstr(1,0,f"Reported config version: Unknown [{configVersion}]")
+        console.addstr(1,0,f"{strlib['conf_ver_title']}{strlib['conf_ver_hi']}[{configVersion}]")
     elif versionNames[configVersion]==0:
-        console.addstr(1,0,"Reported config version: Invalid")
+        console.addstr(1,0,f"{strlib['conf_ver_title']}{strlib['conf_ver_inv']}[{configVersion}]")
     else:
-        console.addstr(1,0,"Reported config version: "+versionNames[configVersion])
-    console.addstr(2,0,"Title screen halt (ms): ◄    ►")
-    console.addstr(3,0,"Title padding style: ◄    ►")
-    console.addstr(4,0,"Use ANSI escape codes: ◄   ►")
-    console.addstr(6,0,"[Reset All]")
-    console.addstr(7,0,"[Cancel]")
-    console.addstr(8,0,"[Save]")
-    current_item=-1
+        console.addstr(1,0,f"{strlib['conf_ver_title']}"+versionNames[configVersion])
+    console.addstr(2,0,f"{strlib['opt_conf_title_ms']}◄    ►")
+    console.addstr(3,0,f"{strlib['opt_conf_title_pad']}◄    ►")
+    console.addstr(4,0,f"{strlib['opt_conf_ansi']}◄   ►")
+    console.addstr(6,0,f"[{strlib['opt_btn_reset']}]")
+    console.addstr(7,0,f"[{strlib['opt_btn_cancel']}]")
+    console.addstr(8,0,f"[{strlib['opt_btn_save']}]")
+    current_item=0
     old_data=[titleScreenWaitTime,decorType,useANSI]
     temp_new=0
     while True:
         console.addstr(2,25,str(titleScreenWaitTime*16).rjust(4))
         if decorType==0:
-            console.addstr(3,22,"None")
+            console.addstr(3,22,strlib["gen_none"])
         else:
             console.addstr(3,22,"".center(4,decorTypes[decorType]))
         if useANSI==0:
-            console.addstr(4,24,"No".rjust(3))
+            console.addstr(4,24,strlib["gen_no"].rjust(3))
         elif useANSI==1:
-            console.addstr(4,24,"Yes".rjust(3))
-        console.addstr(6,1,"Reset All")
-        console.addstr(7,1,"Cancel")
-        console.addstr(8,1,"Save")
+            console.addstr(4,24,strlib["gen_yes"].rjust(3))
+        console.addstr(6,1,strlib["opt_btn_reset"])
+        console.addstr(7,1,strlib["opt_btn_cancel"])
+        console.addstr(8,1,strlib["opt_btn_save"])
         if current_item==0:
             console.addstr(2,25,str(titleScreenWaitTime*16).rjust(4),curses.A_REVERSE)
         elif current_item==1:
             if decorType==0:
-                console.addstr(3,22,"None",curses.A_REVERSE)
+                console.addstr(3,22,strlib["gen_none"],curses.A_REVERSE)
             else:
                 console.addstr(3,22,"".center(4,decorTypes[decorType]),curses.A_REVERSE)
         elif current_item==2:          
             if useANSI==0:
-                console.addstr(4,24,"No".rjust(3),curses.A_REVERSE)
+                console.addstr(4,24,strlib["gen_no"].rjust(3),curses.A_REVERSE)
             elif useANSI==1:
-                console.addstr(4,24,"Yes".rjust(3),curses.A_REVERSE)
+                console.addstr(4,24,strlib["gen_yes"].rjust(3),curses.A_REVERSE)
         elif current_item==3:
-            console.addstr(6,1,"Reset All",curses.A_REVERSE)
+            console.addstr(6,1,strlib["opt_btn_reset"],curses.A_REVERSE)
         elif current_item==4:
-            console.addstr(7,1,"Cancel",curses.A_REVERSE)
+            console.addstr(7,1,strlib["opt_btn_cancel"],curses.A_REVERSE)
         elif current_item==5:
-            console.addstr(8,1,"Save",curses.A_REVERSE)
+            console.addstr(8,1,strlib["opt_btn_save"],curses.A_REVERSE)
         console.refresh()
         key=console.getch()
         #console.addstr(11,0,str(key)+"   ")
@@ -264,9 +464,9 @@ def changeConfig():
                     titleScreenWaitTime,decorType,useANSI=old_data
                 elif current_item==5:
                     configSave(programVersion,titleScreenWaitTime,decorType,useANSI)
-                defineColors()
+                colorscheme.defineColors()
                 curses.endwin()
-                print("Exited settings page.")
+                print(strlib["exit_s"])
                 return
         elif key==curses.KEY_DOWN:
             current_item=(current_item+1)%6
@@ -293,16 +493,16 @@ def changeConfig():
 
 def generalHelp(command):
     if command=="":
-        print(colorScheme["bold"]+"SMF Level Reader v"+versionNames[programVersion]+"\nReleased on 11 Feb 2025 by AeroPurple"+colorScheme["default"]+"\n")
+        print(colorScheme["bold"]+"SMF Level Reader v"+versionNames[programVersion]+"\nReleased on "+release_date+" by AeroPurple"+colorScheme["default"]+"\n")
         print("Available commands:\n"+colorScheme["command"]+"open | o\nexport | exp | e\nimport | imp | i\nsettings | set | s\nreplace | rep | r\nheader | head | h\nhelp | ?\nexit | x"+colorScheme["default"])
         print("\nType in "+colorScheme["command"]+"help"+colorScheme["default"]+" "+colorScheme["bold"]+"[command]"+colorScheme["default"]+" | "+colorScheme["command"]+"?"+colorScheme["default"]+" "+colorScheme["bold"]+"[command]"+colorScheme["default"]+" to learn more about how each command works.")
-    elif command[:4]=="open" or command[:1]=="o":
+    elif command=="open":
         print(colorScheme["bold"]+"Open Command"+colorScheme["default"])
         print("This command opens up a File Explorer dialogue and allows you to select a file. This file is then automatically parsed and can be edited.")
         print("\n"+colorScheme["bold"]+"Syntax"+colorScheme["default"])
         print(colorScheme["command"]+"open"+colorScheme["default"])
         print(colorScheme["command"]+"o"+colorScheme["default"])
-    elif command[:6]=="export" or command[:3]=="exp" or command[:1]=="e":
+    elif command=="export":
         print(colorScheme["bold"]+"Export Command"+colorScheme["default"])
         print("This command exports an opened Super Mario Flash level to your desired format, such as Comma Separated Values (can be edited in Excel), the original SMF text format, or an experimental text format that contains a visual representation of level tiles.")
         print("\n"+colorScheme["bold"]+"Syntax"+colorScheme["default"])
@@ -311,7 +511,7 @@ def generalHelp(command):
         print(colorScheme["command"]+"e"+colorScheme["default"]+" "+colorScheme["bold"]+"[format]"+colorScheme["default"])
         print("\n"+colorScheme["bold"]+"Accepted Values"+colorScheme["default"])
         print("csv | txt | map")
-    elif command[:6]=="import" or command[:3]=="imp" or command[:1]=="i":
+    elif command=="import":
         print(colorScheme["bold"]+"Import Command"+colorScheme["default"])
         print("This command replaces specified tiles with a Comma Seperated Values (CSV) file.")
         print("\n"+colorScheme["bold"]+"Syntax"+colorScheme["default"])
@@ -320,14 +520,14 @@ def generalHelp(command):
         print(colorScheme["command"]+"i"+colorScheme["default"]+" "+colorScheme["bold"]+"[type of tile data]"+colorScheme["default"])
         print("\n"+colorScheme["bold"]+"Accepted Values"+colorScheme["default"])
         print("level | lvl | l\nbonus | bns | b\nlayer 1 | layer1 | l1\nlayer 2 | layer2 | l2")
-    elif command[:6]=="settings" or command[:3]=="set" or command[:1]=="s":
+    elif command=="settings":
         print(colorScheme["bold"]+"Settings Command"+colorScheme["default"])
         print("This command opens a Curses interface that allows you to customize how the program functions and looks.")
         print("\n"+colorScheme["bold"]+"Syntax"+colorScheme["default"])
         print(colorScheme["command"]+"settings"+colorScheme["default"])
         print(colorScheme["command"]+"set"+colorScheme["default"])
         print(colorScheme["command"]+"s"+colorScheme["default"])
-    elif command[:7]=="replace" or command[:3]=="rep" or command[:1]=="r":
+    elif command=="replace":
         print(colorScheme["bold"]+"Replace Command"+colorScheme["default"])
         print("This command replaces various variables in the current level.")
         print("\n"+colorScheme["bold"]+"Syntax"+colorScheme["default"])
@@ -364,852 +564,26 @@ def generalHelp(command):
         print("replace tiles layer1 0:10,0:10 241 -- this will replace a 10x10 square in the upper left corner of the level with coins.")
         print("\nIf no value is specified, like in 'replace header name', you will be prompted to assign a value.")
         print("If no variable is specified, like in 'replace header', a Curses user interface containing all of the variables for that data group will appear.")
-    elif command[:6]=="header" or command[:4]=="head" or command[:1]=="h":
+    elif command=="header":
         print(colorScheme["bold"]+"Header Command"+colorScheme["default"])
         print("This command will print formatted header data, similar to what happens when you open a file.")
         print("\n"+colorScheme["bold"]+"Syntax"+colorScheme["default"])
         print(colorScheme["command"]+"header"+colorScheme["default"])
         print(colorScheme["command"]+"head"+colorScheme["default"])
         print(colorScheme["command"]+"h"+colorScheme["default"])
-    elif command[:4]=="help" or command[:1]=="?":
+    elif command=="help":
         print(colorScheme["bold"]+"Help Command"+colorScheme["default"])
         print("This command prints useful info on how to use this program.")
         print("\n"+colorScheme["bold"]+"Syntax"+colorScheme["default"])
         print(colorScheme["command"]+"help"+colorScheme["default"]+" "+colorScheme["bold"]+"[command]"+colorScheme["default"])
         print(colorScheme["command"]+"?"+colorScheme["default"]+" "+colorScheme["bold"]+"[command]"+colorScheme["default"])
-    elif command[:4]=="exit" or command[:1]=="x":
+    elif command=="exit":
         print(colorScheme["bold"]+"Exit Command"+colorScheme["default"])
         print("This command exits this program.")
         print("\n"+colorScheme["bold"]+"Syntax"+colorScheme["default"])
         print(colorScheme["command"]+"exit"+colorScheme["default"])
         print(colorScheme["command"]+"x"+colorScheme["default"])
-    else:
-        print(colorScheme["typeerror"]+"Invalid Command!"+colorScheme["default"])
 
-smfe_background_names=[
-    colorScheme["null"]+"None"+colorScheme["default"],
-    "Land",
-    "Cave",
-    "Forest",
-    "Castle",
-    "Snow",
-    "Ghost", # 6 - SMF Limit #
-    "Hills",
-    "Snow 2",
-    "Rock",
-    "Castle 2",
-    "Ghost 2",
-    "Cave 2",
-    "Autumn",
-    "Night",
-    "Dark",
-    "Night 2",
-    "Land 2",
-    "Waterfall",
-    "Ruins",
-    "Sky",
-    "Mountain",
-    "Snow 3",
-    "Castle Walls",
-    "Castle 3",
-    "Castle 4",
-    "Desert",
-    "Volcano",
-    "Volcanic Cave"
-]
-
-smfe_music_names=[
-    colorScheme["null"]+"None"+colorScheme["default"],
-    "Overworld",
-    "Forest",
-    "Athletic",
-    "Map",
-    "Underground",
-    "Fortress",
-    "Bowser",
-    "Toad Shop/Level Builder",
-    "Invincibile",
-    "Level Complete",
-    "World Complete", # 11 - SMF Limit #
-    "Castle","Bonus",
-    "Final Bowser",
-    "Ghost House (SMW)",
-    "Ghost House (SMB)",
-    "Volcano",
-    "Airship",
-    "Desert"
-]
-
-smf2_background_names=[
-    colorScheme["null"]+"None"+colorScheme["default"],
-    "Clouds",
-    "Hills",
-    "Forest",
-    "Ghost House",
-    "Underground",
-    "Underwater",
-    "Castle",
-    "Bonus",
-    "Night",
-    colorScheme["null"]+"None"+colorScheme["default"],
-    colorScheme["null"]+"Custom"+colorScheme["default"]
-]
-
-smf2c_background_names=[
-    colorScheme["null"]+"None"+colorScheme["default"],
-    "Clouds (Color 2)",
-    "Hills (Colors 1/1)",
-    "Forest (Color 3)",
-    "Ghost House (Color 1)",
-    "Underground",
-    "Underwater (Color 1)",
-    "Castle (Color 1)",
-    "Bonus (Color 1)",
-    "Night (Color 1)",
-    colorScheme["null"]+"None"+colorScheme["default"],
-    colorScheme["null"]+"Custom"+colorScheme["default"],
-    "Tall Hills (Color 4)",
-    "Mountains (Colors 2/3)",
-    "Forest (Color 4)",
-    "Candle Castle (Color 1)",
-    "Small Hills (Colors 1/5)",
-    "Tall Mountains (Colors 3/1)",
-    "Solid (Color 6)",
-    "Clouds (Color 1)",
-    "Clouds (Color 3)",
-    "Clouds (Color 4)",
-    "Clouds (Color 5)",
-    "Hills (Colors 1/2)",
-    "Hills (Colors 1/3)",
-    "Hills (Colors 1/4)",
-    "Hills (Colors 1/5)",
-    "Hills (Colors 2/1)",
-    "Hills (Colors 2/2)",
-    "Hills (Colors 2/3)",
-    "Hills (Colors 2/4)",
-    "Hills (Colors 2/5)",
-    "Hills (Colors 3/1)",
-    "Hills (Colors 3/2)",
-    "Hills (Colors 3/3)",
-    "Hills (Colors 3/4)",
-    "Hills (Colors 3/5)",
-    "Hills (Colors 4/1)",
-    "Hills (Colors 4/2)",
-    "Hills (Colors 4/3)",
-    "Hills (Colors 4/4)",
-    "Hills (Colors 4/5)",
-    "42" ########### Incomplete !!! ###########
-]
-
-smf2c_music_names=[
-    colorScheme["null"]+"None"+colorScheme["default"],
-    "Overworld",
-    "Athletic",
-    "Castle",
-    "Underground",
-    "Underwater",
-    "Ghost House",
-    "Airship",
-    "Bonus",
-    "Bowser",
-    "Invincibile",
-    "P-Switch",
-    "Minor Fanfare",
-    "Major Fanfare",
-    "Player Down",
-    "Boom Boom",
-    "Plains Map",
-    "Underworld Map",
-    "Key Exit",
-    colorScheme["null"]+"Custom"+colorScheme["default"]
-]
-
-smf2_powerup_names=[
-    "Small Mario",
-    "Big Mario",
-    "Fire Mario",
-    "Cape Mario",
-    "Frictionless Cape Mario (unintended)",
-    "Yoshi-Riding Small Mario (unintended, "+colorScheme["warning"]+"unstable"+colorScheme["default"]+")",
-    "Yoshi-Riding Big Mario (unintended, "+colorScheme["warning"]+"unstable"+colorScheme["default"]+")",
-    "Yoshi-Riding Fire Mario (unintended, "+colorScheme["warning"]+"unstable"+colorScheme["default"]+")",
-    "Yoshi-Riding Cape Mario (unintended, "+colorScheme["warning"]+"unstable"+colorScheme["default"]+")",
-    "Door-Entering Mario (unintended, "+colorScheme["warning"]+"crashes the game"+colorScheme["default"]+")",
-    "Vine-Climbing Small Mario (unintended)",
-    "Vine-Climbing Big Mario (unintended)",
-    "Vine-Climbing Fire Mario (unintended)",
-    "Vine-Climbing Cape Mario (unintended)",
-    colorScheme["null"]+"No Mario (unintended)"+colorScheme["default"],
-    "Carrying Small Mario (unintended)",
-    "Carrying Big Mario (unintended)",
-    "Carrying Fire Mario (unintended)",
-    "Carrying Cape Mario (unintended)",
-    colorScheme["null"]+"No Mario (unintended)"+colorScheme["default"],
-    colorScheme["null"]+"No Mario (unintended)"+colorScheme["default"],
-    colorScheme["null"]+"No Mario (unintended)"+colorScheme["default"],
-    colorScheme["null"]+"No Mario (unintended)"+colorScheme["default"],
-    colorScheme["null"]+"No Mario (unintended)"+colorScheme["default"],
-    colorScheme["null"]+"No Mario (unintended)"+colorScheme["default"],
-    "Swimming Small Mario",
-    "Swimming Big Mario",
-    "Swimming Fire Mario",
-    "Swimming Cape Mario",
-    colorScheme["null"]+"No Mario (unintended)"+colorScheme["default"]
-]
-
-smf2_entrance_types=[
-    "Standard Entrance",
-    "Repeating Door Animation (unintended, "+colorScheme["warning"]+"softlocks the game"+colorScheme["default"]+")",
-    "Upward Pipe Entrance",
-    "Downward Pipe Entrance",
-    "Repeating Downward Pipe Animation (unintended, "+colorScheme["warning"]+"softlocks the game"+colorScheme["default"]+")",
-    "Repeating Upward Pipe Animation (unintended, "+colorScheme["warning"]+"softlocks the game"+colorScheme["default"]+")",
-    "Pipe Entrance Right","Pipe Entrance Left",
-    "Repeating Pipe Left Animation (unintended, "+colorScheme["warning"]+"softlocks the game"+colorScheme["default"]+")",
-    "Repeating Pipe Right Animation (unintended, "+colorScheme["warning"]+"softlocks the game"+colorScheme["default"]+")",
-    "No Mario (unintended, "+colorScheme["warning"]+"softlocks the game"+colorScheme["default"]+")"
-]
-
-smf2_entrance_powerups=[
-    "No Mario (unintended, "+colorScheme["warning"]+"unstable"+colorScheme["default"]+")",
-    "Facing Right",
-    "Facing Left",
-    "Running Right (unintended)",
-    "Running Left (unintended)",
-    "Skidding Right (unintended)",
-    "Skidding Left (unintended)",
-    "Jumping Right (unintended)",
-    "Jumping Left (unintended)",
-    "Falling Right (unintended)",
-    "Falling Left (unintended)",
-    "Crouching Right (unintended)",
-    "Crouching Left (unintended)",
-    "Sliding Right (unintended)",
-    "Sliding Left (unintended)",
-    "Kicking Right (unintended)",
-    "Kicking Left (unintended)",
-    "Superposition Mario (unintended)"
-]
-
-smf2_exit_types=[
-    colorScheme["null"]+"None"+colorScheme["default"],
-    "Door",
-    "P-Switch Door",
-    "Downward Pipe",
-    "Upward Pipe",
-    "Pipe Right",
-    "Pipe Left"
-]
-
-smf_tiles=[
-    ["·","Empty"],
-    ["█","Land Top Center"],
-    ["█","Brown Block"],
-    ["█","Blue Block"],
-    ["█","Forest Top Center"],
-    ["█","Forest Center"],
-    ["█","Invisible"],
-    ["█","Empty Brown ?"],
-    ["█","Spin"],
-    ["█","Bowser Bridge"],
-    ["█","Cave Top Center"],
-    ["█","Brown Brick"],
-    ["█","Blue Brick"],
-    ["█","Castle Top Center"],
-    ["█","Castle Center"],
-    ["█","Invisible"],
-    ["█","Grass Platform Center"],
-    ["█","Grass Platform Left"],
-    ["█","Grass Platform Right"],
-    ["▒","Grass Platform Stem Single"],
-    ["▒","Grass Platform Stem Left"],
-    ["▒","Grass Platform Stem Center"],
-    ["▒","Grass Platform Stem Right"],
-    ["█","Green Pipe Vert Top Left"],
-    ["█","Green Pipe Vert Top Right"],
-    ["█","Green Pipe Vert Stem Left"],
-    ["█","Green Pipe Vert Stem Right"],
-    ["█","Stone Brick Single"],
-    ["█","Stone Brick Right"],
-    ["█","Stone Brick Left"],
-    ["█","Castle Right"],
-    ["█","Castle Left"],
-    ["█","Castle Top Left"],
-    ["█","Castle Top Right"],
-    ["█","Castle Left and Up Join"],
-    ["█","Castle Right and Up Join"],
-    ["█","Snow Top Center"],
-    ["█","Grey Pipe Vert Top Left"],
-    ["█","Grey Pipe Vert Top Right"],
-    ["█","Grey Pipe Vert Stem Left"],
-    ["█","Grey Pipe Vert Stem Right"],
-    ["█","Forest Right and Up Join"],
-    ["█","Forest Right"],
-    ["█","Forest Top Right"],
-    ["█","Forest Top Left"],
-    ["█","Forest Left and Up Join"],
-    ["█","Forest Left"],
-    ["█","Star ?"],
-    ["█","Powerup ?"],
-    ["█","Coin ?"],
-    ["≈","Lava"],
-    ["=","Up Platform"],
-    ["=","Down Platform"],
-    ["=","Side 2 Platform"],
-    ["=","Side 1 Platform"],
-    ["=","Fall Platform"],
-    ["0","Coin"],
-    ["·",colorScheme["null"]+"Null"+colorScheme["default"]],
-    ["·",colorScheme["null"]+"Null"+colorScheme["default"]],
-    ["·",colorScheme["null"]+"Null"+colorScheme["default"]],
-    ["·",colorScheme["null"]+"Null"+colorScheme["default"]],
-    ["×","Brown Goomba"],
-    ["×","Blue Goomba"],
-    ["×","Podoboo"],
-    ["█","Bullet Bill Launcher Left"],
-    ["×","Spiny"],
-    ["×","Green Koopa Walking"],
-    ["×","Hammer Bro"],
-    ["×","Green Koopa Jumping"],
-    ["█","Firebar"],
-    ["×","Moving Piranha"],
-    ["×","Lakitu"],
-    ["×","Standing Piranha"],
-    ["×","Green Koopa Flying"],
-    ["█","Bullet Bill Launcher Right"],
-    ["×","Red Koopa Walking"],
-    ["×","Red Koopa Jumping"],
-    ["×","Red Koopa Flying"],
-    ["×","Buzzy Beetle"],
-    ["×","Bowser"],
-    ["×","Bullet Bill Left"],
-    ["×","Bullet Bill Right"],
-    ["×","Bowser Flame Right"],
-    ["×","Bowser Flame Left"],
-    ["█","Flagpole Blue Block"],
-    ["█","Flagpole Brown Block"],
-    ["×","Boo"],
-    ["█","Green Pipe Horz Top Right"],
-    ["█","Green Pipe Horz Bottom Right"],
-    ["█","Green Pipe Vert Bottom Left"],
-    ["█","Green Pipe Vert Bottom Right"],
-    ["█","Green Pipe Horz Bottom Left"],
-    ["█","Green Pipe Horz Top Left"],
-    ["█","Green Pipe Horz Stem Bottom"],
-    ["█","Green Pipe Horz Stem Top"],
-    ["√","Win"],
-    ["|","Flag Pole"],
-    [">","Flag"],
-    ["·",colorScheme["null"]+"Null"+colorScheme["default"]],
-    ["·",colorScheme["null"]+"Null"+colorScheme["default"]],
-    ["·",colorScheme["null"]+"Null"+colorScheme["default"]],
-    ["▒","Castle Base Left Top"],
-    ["▒","Castle Base Left"],
-    ["▒","Castle Base Top"],
-    ["▒","Castle Base"],
-    ["▒","Castle Door Bottom"],
-    ["▒","Castle Base Right Top"],
-    ["▒","Castle Base Right"],
-    ["▒","Castle Roof Right Edge"],
-    ["▒","Castle Roof Medium 5"],
-    ["▒","Castle Roof Medium 4"],
-    ["▒","Castle Roof Medium 3"],
-    ["▒","Castle Roof Medium 2"],
-    ["▒","Castle Roof Medium 1"],
-    ["▒","Castle Roof Left Edge"],
-    ["▒","Castle Window Right"],
-    ["▒","Castle Door Top"],
-    ["▒","Castle Window Left"],
-    ["·",colorScheme["null"]+"Null"+colorScheme["default"]],
-    ["·",colorScheme["null"]+"Null"+colorScheme["default"]],
-    ["█","Land Top Left"],
-    ["█","Land Top Right"],
-    ["█","Castle Solid Brick"],
-    ["█","Cave Top Left"],
-    ["█","Cave Top Right"],
-    ["█","Snow Top Left"],
-    ["█","Snow Top Right"],
-    ["▒","Mushroom Stem"],
-    ["▒","Mushroom Stem Top"],
-    ["█","Mushroom Platform Left"],
-    ["█","Mushroom Platform Center"],
-    ["█","Mushroom Platform Right"],
-    ["█","Hidden Coin ?"],
-    ["▒","Bush Left"],
-    ["▒","Bush Center"],
-    ["▒","Bush Right"],
-    ["▒","Snowy Tree Top"],
-    ["▒","Snowy Tree Bottom"],
-    ["▒","Tree Top"],
-    ["▒","Tree Bottom"],
-    ["▒","Tree Stem"],
-    ["▒","Snowy Tree Small"],
-    ["▒","Tree Small"],
-    ["▒","Snowy Fence"],
-    ["▒","Fence"],
-    ["·",colorScheme["null"]+"Null"+colorScheme["default"]],
-    ["S","Start Point Top"],
-    ["S","Start Point Bottom"],
-    ["↕","Door Top"],
-    ["↕","Door Bottom"],
-    ["·",colorScheme["null"]+"Null"+colorScheme["default"]],
-    ["↓","In Warp Down Left"],
-    ["↓","In Warp Down Right"],
-    ["→","In Warp Right Top"],
-    ["→","In Warp Right Bottom"],
-    ["←","In Warp Left Top"],
-    ["←","In Warp Left Bottom"],
-    ["↑","In Warp Up Left"],
-    ["↑","In Warp Up Right"],
-    ["↕","Castle Door Top"],
-    ["↕","Castle Door Bottom"],
-    ["↑","Out Warp Up Left"],
-    ["↑","Out Warp Up Right"],
-    ["←","Out Warp Left Top"],
-    ["←","Out Warp Left Bottom"],
-    ["→","Out Warp Right Top"],
-    ["→","Out Warp Right Bottom"],
-    ["↓","Out Warp Down Left"],
-    ["↓","Out Warp Down Right"],
-    ["O","Out Warp Appear Top"],
-    ["O","Out Warp Appear Bottom"],
-    ["█","Green Pipe Left and Up Join"],
-    ["█","Green Pipe Left and Down Join"],
-    ["█","Green Pipe Right and Up Join"],
-    ["█","Green Pipe Right and Down Join"],
-    ["█","Ghost Platform"],
-    ["█","Ghost Pillar Top"],
-    ["█","Ghost Pillar"],
-    ["█","Ghost Block"],
-    ["█","Ghost Bricks Left"],
-    ["█","Ghost Bricks Right"],
-    ["█","Grey Pipe Horz Bottom Left"],
-    ["█","Grey Pipe Horz Top Left"],
-    ["█","Grey Pipe Horz Stem Top"],
-    ["█","Grey Pipe Horz Stem Bottom"],
-    ["█","Grey Pipe Left and Up Join"],
-    ["█","Grey Pipe Left and Down Join"],
-    ["█","Grey Pipe Right and Up Join"],
-    ["█","Grey Pipe Right and Down Join"],
-    ["█","Grey Pipe Vert Bottom Left"],
-    ["█","Grey Pipe Vert Bottom Right"],
-    ["█","Grey Pipe Horz Top Left"],
-    ["█","Grey Pipe Horz Bottom Left"],
-    ["×","Dry Bones"],
-    ["×","Thwomp"], # 194 - SMF tile limit #
-    ["·",colorScheme["null"]+"Null"+colorScheme["default"]],
-]
-
-smf2_tiles=[
-    ["·","Empty"],
-    ["█","Grey Rock"],
-    ["═","Ground Top Center"],
-    ["▒","Monty Mole Hole"],
-    ["/","Ground 45° Slope Top Up"],
-    ["╝","Ground Left and Up Join"],
-    ["\\","Ground 45° Slope Top Down"],
-    ["╚","Ground Right and Up Join"],
-    ["/","Ground 22.5° Slope Top Up 1"],
-    ["▒","Ground 22.5° Slope Top Up Extend 1"],
-    ["/","Ground 22.5° Slope Top Up 2"],
-    ["▒","Ground 22.5° Slope Top Up Extend 2"],
-    ["▒","Ground Center"],
-    ["\\","Ground 22.5° Slope Top Down 1"],
-    ["▒","Ground 22.5° Slope Top Down Extend 1"],
-    ["\\","Ground 22.5° Slope Top Down 2"],
-    ["▒","Ground 22.5° Slope Top Down Extend 2"],
-    ["/","Ground 11.25° Slope Top Up 1"],
-    ["▒","Ground 11.25° Slope Top Up Extend 1"],
-    ["/","Ground 11.25° Slope Top Up 2"],
-    ["▒","Ground 11.25° Slope Top Up Extend 2"],
-    ["/","Ground 11.25° Slope Top Up 3"],
-    ["/","Ground 11.25° Slope Top Up 4"],
-    ["\\","Ground 11.25° Slope Top Down 1"],
-    ["▒","Ground 11.25° Slope Top Down Extend 1"],
-    ["\\","Ground 11.25° Slope Top Down 2"],
-    ["▒","Ground 11.25° Slope Top Down Extend 2"],
-    ["\\","Ground 11.25° Slope Top Down 3"],
-    ["\\","Ground 11.25° Slope Top Down 4"],
-    ["/","Grey Underground 67.5° Slope Top Up 2"],
-    ["/","Grey Underground 67.5° Slope Top Up 1"],
-    ["▒","Grey Underground 67.5° Slope Top Up Extend"],
-    ["\\","Grey Underground 67.5° Slope Top Down 2"],
-    ["\\","Grey Underground 67.5° Slope Top Down 1"],
-    ["▒","Grey Underground 67.5° Slope Top Down Extend"],
-    ["≈","Opaque Water"],
-    ["Y","Vine"],
-    ["/","Pink Diagonal Right"],
-    ["╒","Ground Top Left Semisolid"],
-    ["\\","Pink Diagonal Left"],
-    ["│","Ground Left Semisolid"],
-    ["/","Grey Underground 45° Slope Bottom Up"],
-    ["/","Grey Underground 45° Slope Bottom Up Extend"],
-    ["\\","Grey Underground 45° Slope Bottom Down"],
-    ["\\","Grey Underground 45° Slope Bottom Down Extend"],
-    ["/","Grey Underground 22.5° Slope Bottom Up 2"],
-    ["/",colorScheme["null"]+"Null"+colorScheme["default"]], # 46 - teleports player downwards from left and right, and kills from top and bottom. May be a slope.
-    ["/","Grey Underground 22.5° Slope Bottom Up 1"],
-    ["/","Grey Underground 22.5° Slope Bottom Up Extend"],
-    ["\\","Grey Underground 22.5° Slope Bottom Down 2"],
-    ["\\",colorScheme["null"]+"Null"+colorScheme["default"]], # 50 - teleports player downwards from left and right, and kills from top and bottom. May be a slope.
-    ["\\","Grey Underground 22.5° Slope Bottom Down 1"],
-    ["\\","Grey Underground 22.5° Slope Bottom Down Extend"],
-    ["·",colorScheme["null"]+"Null"+colorScheme["default"]],
-    ["·",colorScheme["null"]+"Null"+colorScheme["default"]],
-    ["█","Flip Block"],
-    ["█","Coin ?"],
-    ["█","Mushroom ?"],
-    ["█","Flower ?"],
-    ["█","Feather ?"],
-    ["█","Star ?"],
-    ["█","Yoshi ?"],
-    ["█","Green !"],
-    ["█","Yellow !"],
-    ["█","Red !"],
-    ["█","Blue !"],
-    ["█","Disabled Flip Block"],
-    ["█","Message Block"],
-    ["█","Vine Flip Block"],
-    ["║","Ground Left"],
-    ["╗","Ground Top Right"],
-    ["╚","Ground Right and Up Join"],
-    ["╕","Ground Top Right Semisolid"],
-    ["│","Ground Right Semisolid"],
-    ["║","Ground Right"],
-    ["\\","Ground 45° Slope Bottom Down Non-Solid"],
-    ["\\","Ground 45° Slope Bottom Down Non-Solid and Top Up Join"],
-    ["/","Ground 45° Slope Top Up"],
-    ["\\","Ground 45° Slope Top Down Non-Solid and Top Up Join"],
-    ["\\","Ground 45° Slope Top Down Non-Solid"],
-    ["╔","Grey Underground Top Left"],
-    ["═","Grey Underground Top Center"],
-    ["▒","Grey Underground Center"],
-    ["║","Grey Underground Left"],
-    ["╒","Grey Underground Top Left Semisolid"],
-    ["│","Grey Underground Left Semisolid"],
-    ["╗","Grey Underground Top Right"],
-    ["═","Grey Underground Bottom Center"],
-    ["║","Grey Underground Right"],
-    ["╕","Grey Underground Top Right Semisolid"],
-    ["│","Grey Underground Right Semisolid"],
-    ["╚","Grey Underground Right and Up Join"],
-    ["╝","Grey Underground Left and Up Join"],
-    ["/","Grey Underground 45° Slope Top Up"],
-    ["╝","Grey Underground Left and Up Join"],
-    ["/","Grey Underground 22.5° Slope Top Up 1"],
-    ["▒","Grey Underground 22.5° Slope Top Up Extend 1"],
-    ["/","Grey Underground 22.5° Slope Top Up 2"],
-    ["▒","Grey Underground 22.5° Slope Top Up Extend 2"],
-    ["/","Grey Underground 11.25° Slope Top Up 1"],
-    ["▒","Grey Underground 11.25° Slope Top Up Extend 1"],
-    ["/","Grey Underground 11.25° Slope Top Up 2"],
-    ["▒","Grey Underground 11.25° Slope Top Up Extend 2"],
-    ["/","Grey Underground 11.25° Slope Top Up 3"],
-    ["/","Grey Underground 11.25° Slope Top Up 4"],
-    ["\\","Grey Underground 45° Slope Top Down"],
-    ["╚","Grey Underground Right and Up Join"],
-    ["\\","Grey Underground 22.5° Slope Top Down 1"],
-    ["▒","Grey Underground 22.5° Slope Top Down Extend 1"],
-    ["\\","Grey Underground 22.5° Slope Top Down 2"],
-    ["▒","Grey Underground 22.5° Slope Top Down Extend 2"],
-    ["\\","Grey Underground 11.25° Slope Top Down 1"],
-    ["▒","Grey Underground 11.25° Slope Top Down Extend 1"],
-    ["\\","Grey Underground 11.25° Slope Top Down 2"],
-    ["▒","Grey Underground 11.25° Slope Top Down Extend 2"],
-    ["\\","Grey Underground 11.25° Slope Top Down 3"],
-    ["\\","Grey Underground 11.25° Slope Top Down 4"],
-    ["═","Rope Platform"],
-    ["▒","Mushroom Stem Single"],
-    ["╔","Castle Top Left"],
-    ["═","Castle Top Center"],
-    ["▒","Castle Center"],
-    ["║","Castle Left"],
-    ["╝","Castle Left and Up Join"],
-    ["╒","Castle Top Left Semisolid"],
-    ["│","Castle Left Semisolid"],
-    ["╔","Castle Stone Top Left"],
-    ["═","Castle Stone Top Center"],
-    ["║","Castle Stone Left"],
-    ["█","Castle Stone Center"],
-    ["╚","Castle Stone Bottom Left"],
-    ["═","Castle Stone Bottom Center"],
-    ["╗","Castle Stone Top Right"],
-    ["║","Castle Stone Right"],
-    ["╝","Castle Stone Bottom Right"],
-    ["╗","Castle Top Right"],
-    ["║","Castle Right"],
-    ["╚","Castle Right and Up Join"],
-    ["╕","Castle Top Right Semisolid"],
-    ["│","Castle Right Semisolid"],
-    ["█","Ghost Wood"],
-    ["M","Ghost Spikes"],
-    ["\\","Ghost Stairs Down"],
-    ["▒","Ghost Stairs Down Extend"],
-    ["▒","Ghost Stem"],
-    ["▒","Ghost Stem Top"],
-    ["═","Ghost Platform"],
-    ["╔","Ghost Box Top Left"],
-    ["╠","Ghost Box Left and Horz Join"],
-    ["═","Ghost Box Top"],
-    ["║","Ghost Box Left"],
-    ["═","Ghost Box Horz"],
-    ["█","Ghost Box Center"],
-    ["╗","Ghost Box Top Right"],
-    ["╣","Ghost Box Right and Horz Join"],
-    ["║","Ghost Box Right"],
-    ["═","Ghost Box Bottom"],
-    ["█","Ghost Bricks Left"],
-    ["█","Ghost Bricks Right"],
-    ["╚","Ghost Box Bottom Left"],
-    ["╝","Ghost Box Bottom Right"],
-    ["/","Ghost Stairs Up"],
-    ["▒","Ghost Stairs Up Extend"],
-    ["▒","Ghost Bricks Background"],
-    ["╒","Mushroom Platform Left"],
-    ["═","Mushroom Platform Center"],
-    ["╕","Mushroom Platform Right"],
-    ["│","Mushroom Stem Left"],
-    ["▒","Mushroom Stem Center"],
-    ["│","Mushroom Stem Right"],
-    ["═","Bonus Bottom"],
-    ["║","Bonus Right"],
-    ["║","Bonus Left"],
-    ["═","Bonus Top Center"],
-    ["█","Bonus Center"],
-    ["╝","Bonus Bottom Right"],
-    ["═","Wooden Bridge"],
-    ["▒","Wooden Bridge Extend"],
-    ["╔","Yellow Underground Top Left"],
-    ["═","Yellow Underground Top Center"],
-    ["║","Yellow Underground Left"],
-    ["╗","Yellow Underground Top Right"],
-    ["║","Yellow Underground Right"],
-    ["╝","Yellow Underground Left and Up Join"],
-    ["╚","Yellow Underground Right and Up Join"],
-    ["/","Yellow Underground 45° Slope Top Up"],
-    ["╝","Yellow Underground Left and Up Join"],
-    ["/","Yellow Underground 22.5° Slope Top Up 1"],
-    ["▒","Yellow Underground 22.5° Slope Top Up Extend 1"],
-    ["/","Yellow Underground 22.5° Slope Top Up 2"],
-    ["▒","Yellow Underground 22.5° Slope Top Up Extend 2"],
-    ["\\","Yellow Underground 45° Slope Top Down"],
-    ["╚","Yellow Underground Right and Up Join"],
-    ["\\","Yellow Underground 22.5° Slope Top Down 1"],
-    ["▒","Yellow Underground 22.5° Slope Top Down Extend 1"],
-    ["\\","Yellow Underground 22.5° Slope Top Down 2"],
-    ["▒","Yellow Underground 22.5° Slope Top Down Extend 2"],
-    ["\\","Yellow Underground 45° Slope Bottom Down"],
-    ["╗","Yellow Underground Left and Down Join"],
-    ["\\","Yellow Underground 22.5° Slope Bottom Down 1"],
-    ["▒","Yellow Underground 22.5° Slope Bottom Down Extend 1"],
-    ["\\","Yellow Underground 22.5° Slope Bottom Down 2"],
-    ["▒","Yellow Underground 22.5° Slope Bottom Down Extend 2"],
-    ["/","Yellow Underground 45° Slope Bottom Up"],
-    ["╔","Yellow Underground Right and Down Join"],
-    ["/","Yellow Underground 22.5° Slope Bottom Up 1"],
-    ["▒","Yellow Underground 22.5° Slope Bottom Up Extend 1"],
-    ["/","Yellow Underground 22.5° Slope Bottom Up 2"],
-    ["▒","Yellow Underground 22.5° Slope Bottom Up Extend 2"],
-    ["▒","Yellow Underground Center"],
-    ["≈","Opaque Water Top"],
-    ["█","Brown Block"],
-    ["═","Cloud"],
-    ["═","Yellow Bridge"],
-    ["▒","Yellow Bridge Extend"],
-    ["█","Yellow Small Pipe Left"],
-    ["█","Yellow Pipe Center"],
-    ["█","Yellow Pipe Right"],
-    ["█","Green Small Pipe Top"],
-    ["█","Green Small Pipe Center"],
-    ["█","Green Small Pipe Bottom"],
-    ["╔","Green Pipe Vert Top Left"],
-    ["╗","Green Pipe Vert Top Right"],
-    ["║","Green Pipe Vert Stem Left"],
-    ["║","Green Pipe Vert Stem Right"],
-    ["╚","Green Pipe Vert Bottom Left"],
-    ["╝","Green Pipe Vert Bottom Right"],
-    ["╔","Green Pipe Horz Top Left"],
-    ["╚","Green Pipe Horz Bottom Left"],
-    ["═","Green Pipe Horz Stem Top"],
-    ["═","Green Pipe Horz Stem Bottom"],
-    ["╗","Green Pipe Horz Top Right"],
-    ["╝","Green Pipe Horz Bottom Right"],
-    ["╔","Yellow Pipe Vert Top Left"],
-    ["╗","Yellow Pipe Vert Top Right"],
-    ["║","Yellow Pipe Vert Stem Left"],
-    ["║","Yellow Pipe Vert Stem Right"],
-    ["═","Yellow Underground Bottom Center"],
-    ["█","Ghost Ground Top Center"],
-    ["▒","Goal Pole Top"],
-    ["▒","Goal Pole"],
-    ["0","Coin"],
-    ["╔","Ground Top Left"],
-    ["╝","Ground Left and Up Join"],
-    ["≈","Seethrough Water Top"],
-    ["≈","Seethrough Water"],
-    ["≈","Lava Top"],
-    ["≈","Lava"],
-    ["↕","Door"],
-    ["↕","P-Switch Door"],
-    ["ʌ","Castle Spike Up"],
-    ["v","Castle Spike Down"],
-    ["<","Castle Spike Left"],
-    [">","Castle Spike Right"],
-    ["▒","Dotted Green !"],
-    ["▒","Dotted Yellow !"],
-    ["▒","Dotted Red !"],
-    ["▒","Dotted Blue !"],
-    ["▒","Checkpoint Pole Light Top"],
-    ["▒","Checkpoint Pole Light"],
-    ["▒","Checkpoint Pole Top"],
-    ["▒","Checkpoint Pole"],
-    ["▒","Bush Left"],
-    ["▒","Bush Center"],
-    ["▒","Bush Right"],
-    ["/","Sloped Green Pipe Top Up Edge"], # The first word refers to the pipe tile's direction, i.e. ceiling/floor
-    ["/","Sloped Green Pipe Top Up"],      # The second word specifies which way the tile is sloped, going to the right
-    ["▒","Sloped Green Pipe Top Up Extend"], # Extend means that it is a tile that bridges the gap between a center
-    ["▒","Sloped Green Pipe Center"],      # tile and a ceiling/floor. It is placed above or below the tile
-    ["/","Sloped Green Pipe Bottom Up"],   # Edge refers to a corner
-    ["▒","Sloped Green Pipe Bottom Up Extend"],
-    ["▒","Sloped Green Pipe Top Up Edge Extend"],
-    ["▒","Sloped Green Pipe Bottom Up Edge Extend"],
-    ["▒","Sloped Green Pipe Top Down Extend"],
-    ["\\","Sloped Green Pipe Top Down Left"],
-    ["\\","Sloped Green Pipe Top Down Right"],
-    ["/","Sloped Green Pipe Bottom Up Edge"],
-    ["█","Tank Tires Left"],
-    ["█","Tank Tires Center"],
-    ["█","Tank Tires Right"],
-    ["█","Tank Wood Center 1"],
-    ["Z","Tank Wood Left Edge Chipped With Platform"],
-    ["█","Tank Wood Window"],
-    ["[","Tank Wood Left Edge"],
-    ["]","Tank Wood Right Edge"],
-    ["█","Tank Wood Center 2"],
-    ["\\","Tank Wood Left Edge Chipped Long 1"],
-    ["\\","Tank Wood Left Edge Chipped Long 2"],
-    ["/","Tank Wood Right Edge Chipped"],
-    ["\\","Tank Wood Left Edge Chipped"],
-    ["█","Bullet Bill Launcher Stem Top"],
-    ["█","Bullet Bill Launcher Stem"],
-    ["╔","Torpedo Ted Launcher Top Left"],
-    ["╗","Torpedo Ted Launcher Top Right"],
-    ["╚","Torpedo Ted Launcher Bottom Left"],
-    ["╝","Torpedo Ted Launcher Bottom Right"],
-    ["╝","Grey Underground Bottom Right"],
-    ["╚","Grey Underground Bottom Left"],
-    ["╝","Yellow Underground Bottom Right"],
-    ["╚","Yellow Underground Bottom Left"],
-    ["×","Yoshi"],
-    ["×","Red Koopa Shell"],
-    ["█","Triple Platform"],
-    ["×","Mushroom"],
-    ["×","Fire Flower"],
-    ["×","Feather"],
-    ["×","Star"],
-    ["×","Green Koopa Shell"],
-    ["×","Green Koopa"],
-    ["×","Red Koopa"],
-    ["×","Key"],
-    ["×","Goomba"],
-    ["×","Shellless Green Koopa"],
-    ["×","Shellless Red Koopa"],
-    ["×","Jumping Green Koopa"],
-    ["×","Jumping Red Koopa"],
-    ["×","Flying Green Koopa"],
-    ["×","Flying Red Koopa"],
-    ["×","Monty Mole"],
-    ["×","Monty Mole Out 1 Background"],
-    ["×","Monty Mole Out 2 Ground"],
-    ["×","Chargin' Chuck"],
-    ["×","Jumpin'/Clappin' Chuck"],
-    ["×","Baseball/Football Chuck"],
-    ["×","Piranha Plant 1 Jump"],
-    ["×","Piranha Plant 2 Jump Fire"],
-    ["×","Super Koopa 1 Walk"],
-    ["×","Walk/Slide Blue Koopa"],
-    ["×","Buzzy Beetle Shell"],
-    ["×","Buzzy Beetle"],
-    ["×","Piranha Plant 3 Attached Upside-Down"],
-    ["×","Swooper"],
-    ["×","Volcano Lotus"],
-    ["×","Yoshi Egg"],
-    ["×","Spike Top"],
-    ["×","Rex"],
-    ["×","Spiny"],
-    ["×","Super Koopa 2 Fly"],
-    ["×","Bullet Bill"],
-    ["×","Boo"],
-    ["×","Boo Clock"],
-    ["×","Boo Trail"],
-    ["×","Eerie"],
-    ["×","Dry Bones"],
-    ["×","Bony Beetle"],
-    ["█","Chain Ball"],
-    ["×","Podoboo"],
-    ["×","Thwimp"],
-    ["×","Fuzzy/Lil' Sparky"],
-    ["×","Thwomp"],
-    ["×","Cheep Cheep Type 1 Horz/Vert"],
-    ["×","Blurp"],
-    ["×","Urchin Horz/Vert"],
-    ["×","Wall Urchin"],
-    ["×","Rip Van Fish"], # 354 - sleeping fish
-    ["×","Fish Bone"],
-    ["█","Single Rotating Platform"],
-    ["=","Moving Platform"],
-    ["=","Falling Platform"],
-    ["█","Long Platform"],
-    ["=","Floating Platform"],
-    ["×","Springboard"],
-    ["=","Hammer Bro Platform"],
-    ["×","Pipe Lakitu"],
-    ["×","Cloud Lakitu"],
-    ["×","Big Boo/Banzai Bill"],
-    ["×","Spikeball/Porcupuffer"],
-    ["×","Mega Mole"],
-    ["×","Saw"],
-    ["×","Torpedo Ted Hand"],
-    ["H","Goal Point 1 Gate"],
-    ["S","Special Tile"],
-    ["×","P-Switch"],
-    ["↕","P-Switch Door"],
-    ["×","! Switch"],
-    ["H","Checkpoint"],
-    ["×","Keyhole"],
-    ["█","Bullet Bill Launcher"],
-    ["G","Sprite Generator Bullet Bill/Super Koopa/Cheep Cheep"],
-    ["×","Cheep Cheep Type 2 Jump"],
-    ["A","Autoscroll 1/2/3"],
-    ["√","Goal Point 2 Ball"],
-    ["×","Boom Boom"],
-    ["×","Bowser"],
-    ["A","Autoscroll 4/5/6"],
-    ["█","Brick Block"],
-    ["█","Coin Brick"],
-    ["█","Mushroom Brick"],
-    ["█","Flower Brick"],
-    ["█","Feather Brick"],
-    ["█","Star Brick"],
-    ["█","Yoshi Brick"],
-    ["█","Vine Brick"],
-    ["V","Muncher"],
-    ["┌","Climbing Net Top Left"],
-    ["┐","Climbing Net Top Right"],
-    ["└","Climbing Net Bottom Left"],
-    ["┘","Climbing Net Bottom Right"],
-    ["─","Climbing Net Top Center"],
-    ["─","Climbing Net Bottom Center"],
-    ["│","Climbing Net Left"],
-    ["│","Climbing Net Right"],
-    ["X","Climbing Net Center"],
-    ["┐","Climbing Net Left and Down Join"],
-    ["┌","Climbing Net Right and Down Join"],
-    ["┘","Climbing Net Left and Up Join"],
-    ["└","Climbing Net Right and Up Join"], # 406 - SMF2 tile limit #
-    ["·",colorScheme["null"]+"Null"+colorScheme["default"]],
-]
 #print(smf2_tiles[406][0]+" - Tile 406 - "+smf2_tiles[406][1])
 #print(smf2c_background_names[42])
 
@@ -1255,51 +629,52 @@ layer_2=[]
 def printInfo():
     if game=="smf" or game=="smfe":
         if game=="smf":
-            print(colorScheme["bold"]+"Game: "+colorScheme["default"]+"Super Mario Flash")
+            print(strlib["info_game"]+strlib["info_smf"])
         elif game=="smfe":
-            print(colorScheme["bold"]+"Game: "+colorScheme["default"]+"Super Mario Flash Ver. E")
-        else:
-            print(colorScheme["error"]+"You messed with the source code, didn't you? "+colorScheme["default"])
-        print(colorScheme["bold"]+"Level Name: "+colorScheme["default"]+level_name) if level_name!="" else print(colorScheme["null"]+"None"+colorScheme["default"])
+            print(strlib["info_game"]+strlib["info_smfe"])
+        print(strlib["info_name"]+level_name) if level_name!="" else print(strlib["gen_none_f"])
         try:
-            print(colorScheme["bold"]+"Level Background: "+colorScheme["default"]+level_background+" ("+smfe_background_names[int(level_background)]+")")
+            print(strlib["info_level_bg"]+level_background+" ("+smfe_background_names[int(level_background)]+")")
         except:
-            print(colorScheme["bold"]+"Level Background: "+colorScheme["default"]+level_background+" ("+smfe_background_names[0]+")")
+            print(strlib["info_level_bg"]+level_background+" ("+smfe_background_names[0]+")")
         try:
-            print(colorScheme["bold"]+"Level Music: "+colorScheme["default"]+level_music+" ("+smfe_music_names[int(level_music)]+")")
+            print(strlib["info_level_mus"]+level_music+" ("+smfe_music_names[int(level_music)]+")")
         except:
-            print(colorScheme["bold"]+"Level Music: "+colorScheme["default"]+level_music+" ("+smfe_music_names[0]+")")
+            print(strlib["info_level_mus"]+level_music+" ("+smfe_music_names[0]+")")
+            
+        #### THE FOLLOWING IS SOME REAL MESSY CODE. FIX RIGHT NOW ####################################################
+        
         if int(level_width)/20!=math.floor(int(level_width)/20) and (int(level_width)<320 or int(level_width)>4500):
-            print(colorScheme["bold"]+"Level Width: "+colorScheme["default"]+level_width+" ({:.0f}".format(int(level_width)/20)+" tiles, no right border, unintended size)")
+            print(strlib["info_level_x"]+level_width+" ({:.0f}".format(int(level_width)/20)+" tiles, no right border, unintended size)")
         elif int(level_width)/20!=math.floor(int(level_width)/20):
-            print(colorScheme["bold"]+"Level Width: "+colorScheme["default"]+level_width+" ({:.0f}".format(int(level_width)/20)+" tiles, no right border)")
+            print(strlib["info_level_x"]+level_width+" ({:.0f}".format(int(level_width)/20)+" tiles, no right border)")
         elif (int(level_width)<320 or int(level_width)>4500):
-            print(colorScheme["bold"]+"Level Width: "+colorScheme["default"]+level_width+" ({:.0f}".format(int(level_width)/20)+" tiles, unintended size)")
+            print(strlib["info_level_x"]+level_width+" ({:.0f}".format(int(level_width)/20)+" tiles, unintended size)")
         else:
-            print(colorScheme["bold"]+"Level Width: "+colorScheme["default"]+level_width+" ({:.0f}".format(int(level_width)/20)+" tiles)")
+            print(strlib["info_level_x"]+level_width+" ({:.0f}".format(int(level_width)/20)+" tiles)")
         try:
-            print(colorScheme["bold"]+"Bonus Background: "+colorScheme["default"]+bonus_background+" ("+smfe_background_names[int(bonus_background)]+")")
+            print(strlib["info_bonus_bg"]+bonus_background+" ("+smfe_background_names[int(bonus_background)]+")")
         except:
-            print(colorScheme["bold"]+"Bonus Background: "+colorScheme["default"]+bonus_background+" ("+smfe_background_names[0]+")")
+            print(strlib["info_bonus_bg"]+bonus_background+" ("+smfe_background_names[0]+")")
         try:
-            print(colorScheme["bold"]+"Bonus Music: "+colorScheme["default"]+bonus_music+" ("+smfe_music_names[int(bonus_music)]+")")
+            print(strlib["info_bonus_mus"]+bonus_music+" ("+smfe_music_names[int(bonus_music)]+")")
         except:
-            print(colorScheme["bold"]+"Bonus Music: "+colorScheme["default"]+bonus_music+" ("+smfe_music_names[0]+")")
+            print(strlib["info_bonus_mus"]+bonus_music+" ("+smfe_music_names[0]+")")
         if int(bonus_width)/20!=math.floor(int(bonus_width)/20) and (int(bonus_width)<320 or int(bonus_width)>4500):
-            print(colorScheme["bold"]+"Bonus Width: "+colorScheme["default"]+bonus_width+" ({:.0f}".format(int(bonus_width)/20)+" tiles, no right border, unintended size)")
+            print(strlib["info_bonus_x"]+bonus_width+" ({:.0f}".format(int(bonus_width)/20)+" tiles, no right border, unintended size)")
         elif int(bonus_width)/20!=math.floor(int(bonus_width)/20):
-            print(colorScheme["bold"]+"Bonus Width: "+colorScheme["default"]+bonus_width+" ({:.0f}".format(int(bonus_width)/20)+" tiles, no right border)")
+            print(strlib["info_bonus_x"]+bonus_width+" ({:.0f}".format(int(bonus_width)/20)+" tiles, no right border)")
         elif (int(bonus_width)<320 or int(bonus_width)>4500):
-            print(colorScheme["bold"]+"Bonus Width: "+colorScheme["default"]+bonus_width+" ({:.0f}".format(int(bonus_width)/20)+" tiles, unintended size)")
+            print(strlib["info_bonus_x"]+bonus_width+" ({:.0f}".format(int(bonus_width)/20)+" tiles, unintended size)")
         else:
-            print(colorScheme["bold"]+"Bonus Width: "+colorScheme["default"]+bonus_width+" ({:.0f}".format(int(bonus_width)/20)+" tiles)")    
-        print(colorScheme["bold"]+"Start Point: "+colorScheme["default"]+f"{start_at} @ xPos {start_xpos} yPos {start_ypos} ({int(start_xpos)/20} tiles horz, {int(start_ypos)/20} tiles vert)")
-        print(colorScheme["bold"]+"Level Warps:"+colorScheme["default"])
+            print(strlib["info_bonus_x"]+bonus_width+" ({:.0f}".format(int(bonus_width)/20)+" tiles)")    
+        print(strlib["info_start"]+f"{start_at} @ xPos {start_xpos} yPos {start_ypos} ({int(start_xpos)/20}{strlib['info_gen_tx']}{int(start_ypos)/20}{strlib['info_gen_ty']})")
+        print(strlib["info_level_warps"])
         for i in range(len(level_warps)):
             if level_warps[i][2]=="Level" or level_warps[i][2]=="Bonus":
                 warp_end_sublevel_print=level_warps[i][2]
             else:
-                warp_end_sublevel_print=level_warps[i][2]+" (invalid, "+colorScheme["warning"]+"softlocks the game"+colorScheme["default"]+")"
+                warp_end_sublevel_print=level_warps[i][2]+f" ({strlib['gen_inv']}"+strlib["gen_softlocker"]+")"
             if level_warps[i][5]=="right" or level_warps[i][5]=="left":
                 warp_end_direction_print="facing "+level_warps[i][5]
             else:
@@ -1307,21 +682,21 @@ def printInfo():
             if level_warps[i][6]=="Up" or level_warps[i][6]=="Down" or level_warps[i][6]=="Left" or level_warps[i][6]=="Right":
                 warp_end_type_print="Pipe "+level_warps[i][6]+" Animation"
             elif level_warps[i][6]=="Appear":
-                warp_end_type_print="No Animation"
+                warp_end_type_print=strlib["info_no_anim"]
             else:
-                warp_end_type_print=colorScheme["warning"]+"invalid animation \""+level_warps[i][6]+"\" ("+colorScheme["warning"]+"softlocks the game"+colorScheme["default"]+")"
+                warp_end_type_print=colorScheme["warning"]+"invalid animation \""+level_warps[i][6]+"\" ("+strlib["gen_softlocker"]+")"
             warp_print=f"\tWarp from xPos {int(level_warps[i][1])*20} yPos {int(level_warps[i][0])*20} to xPos {level_warps[i][3]} yPos {level_warps[i][4]} in {warp_end_sublevel_print}, {warp_end_direction_print}, {warp_end_type_print}"
             
             print(warp_print)
         if level_warps==[]:
-            warp_print=colorScheme["null"]+"\tNone"+colorScheme["default"]
+            warp_print=f"\t{strlib['gen_none_f']}"
             print(warp_print)
         print(colorScheme["bold"]+"Bonus Warps:"+colorScheme["default"])
         for i in range(len(bonus_warps)):
             if bonus_warps[i][2]=="Level" or bonus_warps[i][2]=="Bonus":
                 warp_end_sublevel_print=bonus_warps[i][2]
             else:
-                warp_end_sublevel_print=bonus_warps[i][2]+" (invalid, "+colorScheme["warning"]+"softlocks the game"+colorScheme["default"]+")"
+                warp_end_sublevel_print=bonus_warps[i][2]+f" ({strlib['gen_inv']}"+strlib["gen_softlocker"]+")"
             if bonus_warps[i][5]=="right" or bonus_warps[i][5]=="left":
                 warp_end_direction_print="facing "+bonus_warps[i][5]
             else:
@@ -1329,25 +704,23 @@ def printInfo():
             if bonus_warps[i][6]=="Up" or bonus_warps[i][6]=="Down" or bonus_warps[i][6]=="Left" or bonus_warps[i][6]=="Right":
                 warp_end_type_print="Pipe "+bonus_warps[i][6]+" Animation"
             elif bonus_warps[i][6]=="Appear":
-                warp_end_type_print="No Animation"
+                warp_end_type_print=strlib["info_no_anim"]
             else:
                 warp_end_type_print=colorScheme["null"]+"invalid animation \""+bonus_warps[i][6]+"\" (softlocks the game)"+colorScheme["default"]
             warp_print="\tWarp from xPos "+str(int(bonus_warps[i][1])*20)+" yPos "+str(int(bonus_warps[i][0])*20)+" to xPos "+bonus_warps[i][3]+" yPos "+bonus_warps[i][4]+" in "+warp_end_sublevel_print+", "+warp_end_direction_print+", "+warp_end_type_print
             
             print(warp_print)
         if bonus_warps==[]:
-            warp_print=colorScheme["null"]+"\tNone"+colorScheme["default"]
+            warp_print=f"\t{strlib['gen_none_f']}"
             print(warp_print)
     elif game=="smf2" or game=="smf2c":
         if game=="smf2":
-            print(colorScheme["bold"]+"Game: "+colorScheme["default"]+"Super Mario Flash 2")
+            print(strlib["info_game"]+strlib["info_smf2"])
         elif game=="smf2c":
-            print(colorScheme["bold"]+"Game: "+colorScheme["default"]+"Super Mario Flash 2 Ver. C")
-        else:
-            print(colorScheme["error"]+"You messed with the source code, didn't you? "+colorScheme["default"])
-        print(colorScheme["bold"]+"Level Name: "+colorScheme["default"]+level_name) if level_name!="" else print(colorScheme["null"]+"None"+colorScheme["default"])
-        print(colorScheme["bold"]+"Description: "+colorScheme["default"]+level_description) if level_description!="" else print(colorScheme["null"]+"None"+colorScheme["default"])
-        print(colorScheme["bold"]+"Author: "+colorScheme["default"]+level_author) if level_author!="" else print(colorScheme["null"]+"None"+colorScheme["default"])
+            print(strlib["info_game"]+strlib["info_smf2c"])
+        print(strlib["info_name"]+level_name) if level_name!="" else print(strlib["gen_none_f"])
+        print(colorScheme["bold"]+"Description: "+colorScheme["default"]+level_description) if level_description!="" else print(strlib["gen_none_f"])
+        print(colorScheme["bold"]+"Author: "+colorScheme["default"]+level_author) if level_author!="" else print(strlib["gen_none_f"])
         print(colorScheme["bold"]+"Message Block Text: «"+colorScheme["default"]+level_message+colorScheme["bold"]+"»"+colorScheme["default"])
         try:
             if game=="smf2":
@@ -1357,8 +730,8 @@ def printInfo():
         except:
             print(colorScheme["bold"]+"Background: "+colorScheme["default"]+level_background+" ("+smf2_background_names[0]+")")
         if level_background=="11":
-            print(colorScheme["bold"]+"Background URL 1: "+colorScheme["default"]+colorScheme["link"]+level_url1+colorScheme["default"]) if level_url1!="" else print(colorScheme["bold"]+"Background URL 1: "+colorScheme["default"]+colorScheme["null"]+"None"+colorScheme["default"])
-            print(colorScheme["bold"]+"Background URL 2: "+colorScheme["default"]+colorScheme["link"]+level_bg_url2+colorScheme["default"]) if level_bg_url2!="" else print(colorScheme["bold"]+"Background URL 2: "+colorScheme["default"]+colorScheme["null"]+"None"+colorScheme["default"])
+            print(colorScheme["bold"]+"Background URL 1: "+colorScheme["default"]+colorScheme["link"]+level_url1+colorScheme["default"]) if level_url1!="" else print(colorScheme["bold"]+"Background URL 1: "+colorScheme["default"]+strlib["gen_none_f"])
+            print(colorScheme["bold"]+"Background URL 2: "+colorScheme["default"]+colorScheme["link"]+level_bg_url2+colorScheme["default"]) if level_bg_url2!="" else print(colorScheme["bold"]+"Background URL 2: "+colorScheme["default"]+strlib["gen_none_f"])
         try:
             print(colorScheme["bold"]+"Music: "+colorScheme["default"]+level_music+" ("+smf2c_music_names[int(level_music)]+")")
         except:
@@ -1404,7 +777,7 @@ def printInfo():
             except:
                 entrance_mario_status_print=all_entrances[i][3]+" - "+smf2_entrance_powerups[17]
             
-            entrance_print=entrance_print+entrance_type_print+" ["+all_entrances[i][0]+"], "+entrance_mario_status_print+" ["+all_entrances[i][3]+"] @ xPos "+all_entrances[i][1]+" yPos "+all_entrances[i][2]+" ("+str(int(all_entrances[i][1])/20)+" tiles horz, "+str(int(all_entrances[i][2])/20)+" tiles vert)"
+            entrance_print=entrance_print+entrance_type_print+" ["+all_entrances[i][0]+"], "+entrance_mario_status_print+" ["+all_entrances[i][3]+"] @ xPos "+all_entrances[i][1]+" yPos "+all_entrances[i][2]+" ("+str(int(all_entrances[i][1])/20)+strlib["info_gen_tx"]+str(int(all_entrances[i][2])/20)+f"{strlib['info_gen_ty']})"
 
             print(entrance_print)
         print(colorScheme["bold"]+"Exits:"+colorScheme["default"])
@@ -1416,42 +789,46 @@ def printInfo():
             except:
                 exit_type_print=smf2_exit_types[0]
 
-            exit_print=exit_print+exit_type_print+" ["+all_exits[i][2]+"] to "+colorScheme["bold"]+"ID "+str(int(all_exits[i][3])+1)+colorScheme["default"]+" @ xPos "+str(int(all_exits[i][0])*20)+" yPos "+str(int(all_exits[i][1])*20)+" ("+all_exits[i][0]+" tiles horz, "+all_exits[i][1]+" tiles vert)"
+            exit_print=exit_print+exit_type_print+" ["+all_exits[i][2]+"] to "+colorScheme["bold"]+"ID "+str(int(all_exits[i][3])+1)+colorScheme["default"]+" @ xPos "+str(int(all_exits[i][0])*20)+" yPos "+str(int(all_exits[i][1])*20)+" ("+all_exits[i][0]+strlib["info_gen_tx"]+all_exits[i][1]+f"{strlib['info_gen_ty']})"
             print(exit_print)
             
         if exit_print=="":
-            print(colorScheme["null"]+"\tNone"+colorScheme["default"])
+            print(f"\t{strlib['gen_none_f']}")
     else:
-        print(colorScheme["typeerror"]+"No level in memory!"+colorScheme["default"])
+        print(strlib["te_no_level"])
 
 def openFile(filePath):
     if filePath=="":
-        filePath=filedialog.askopenfilename(title="Please open a Super Mario Flash level file.", initialdir=filePath)
+        filePath=filedialog.askopenfilename(title=strlib["title_file_open_request"], initialdir=filePath)
         if filePath=="":
-            print(colorScheme["typeerror"]+"No File Opened!"+colorScheme["default"])
-            return
+            print(strlib["te_file_open_decline"])
+            return filePath, ""
     else:
         filePath=os.path.normpath(filePath)
         if os.path.isdir(filePath):
             root = tk.Tk()
             root.withdraw()
 
-            filePath=filedialog.askopenfilename(title="Please open a Super Mario Flash level file.", initialdir=filePath)
+            filePath=filedialog.askopenfilename(title=strlib["title_file_open_request"], initialdir=filePath)
             if filePath=="":
-                print(colorScheme["typeerror"]+"No File Opened!"+colorScheme["default"])
-                return
+                print(strlib["te_file_open_decline"])
+                return filePath, ""
     try:
         file=open(filePath,mode='r', encoding="utf-8")
-        level_code=file.read()
+        return filePath, file.read()
     except UnicodeDecodeError:
-        print(colorScheme["error"]+"Invalid file!\nConsider converting your level data to txt or csv."+colorScheme["default"])
-        return
+        print(strlib["err_file_unicode"])
+        return "", ""
     except FileNotFoundError:
-        print(colorScheme["typeerror"]+"No such file or directory!"+colorScheme["default"])
-        return
+        print(strlib["te_file_name"])
+        return "", ""
 
     #print(level_code) # useful for debugging
 
+def processFile(filePath):
+    filePath, level_code=openFile(filePath)
+    if filePath=="":
+        return
     counter=0
     global game
     while True:
@@ -1811,12 +1188,12 @@ def openFile(filePath):
             return
             
         except IndexError as e:
-            errorString=str(e)+" occured on line "+str(e.__traceback__.tb_lineno)
-            print(colorScheme["error"]+"Invalid or incomplete level code\n"+errorString+colorScheme["default"])
+            errorString=str(e)+strlib["err_line"]+str(e.__traceback__.tb_lineno)
+            print(strlib["err_parse_unterminated"]+errorString+colorScheme["default"])
             return
         except ValueError as e:
-            errorString=str(e)+" occured on line "+str(e.__traceback__.tb_lineno)
-            print(colorScheme["error"]+"Invalid tile data\n"+errorString+colorScheme["default"])
+            errorString=str(e)+strlib["err_line"]+str(e.__traceback__.tb_lineno)
+            print(strlib["err_parse_tile_id"]+errorString+colorScheme["default"])
             return
             
 
@@ -2171,22 +1548,23 @@ def openFile(filePath):
             return
             
         except Exception as e:
-            print(colorScheme["error"]+"exception encountered during parsing\ndata dump:\n\nlevel_name: "+level_name+"\nlevel_description: "+level_description+"\nlevel_author: "+level_author+"\nlevel_message: "+level_message+"\nlevel_background: "+level_background+"\nlevel_url1: "+level_url1+"\nlevel_bg_url2: "+level_bg_url2+"\nlevel_music: "+level_music+"\nlevel_powerup: "+level_powerup+"\nlevel_width: "+level_width+"\nlevel_height: "+level_height+"\nlevel_variable_1: "+level_variable_1+"\nlevel_variable_2: "+level_variable_2+"\nlevel_layer_priority: "+level_layer_priority+"\nlevel_layer2_width: "+level_layer2_width+"\nlevel_layer2_height: "+level_layer2_height+"\nlevel_layer2_xpos: "+level_layer2_xpos+"\nlevel_layer2_ypos: "+level_layer2_ypos+"\nlevel_layer_priority_2: "+level_layer_priority_2+"\nlevel_variable_3: "+level_variable_3+"\noneentrance: "+str(oneentrance)+"\nall_entrances: "+str(all_entrances)+"\noneexit: "+str(oneexit)+"\nall_exits: "+str(all_exits)+"\nlayer_1: "+str(layer_1)+"\nlayer_2: "+str(layer_2)+"\ncurrent_row: "+str(current_row)+"\ntiles_processed: "+str(tiles_processed)+"\n\n"+str(e)+" occured on line "+str(e.__traceback__.tb_lineno)+colorScheme["default"])
+            print(strlib["err_parse_gen"]+"\nlevel_name: "+level_name+"\nlevel_description: "+level_description+"\nlevel_author: "+level_author+"\nlevel_message: "+level_message+"\nlevel_background: "+level_background+"\nlevel_url1: "+level_url1+"\nlevel_bg_url2: "+level_bg_url2+"\nlevel_music: "+level_music+"\nlevel_powerup: "+level_powerup+"\nlevel_width: "+level_width+"\nlevel_height: "+level_height+"\nlevel_variable_1: "+level_variable_1+"\nlevel_variable_2: "+level_variable_2+"\nlevel_layer_priority: "+level_layer_priority+"\nlevel_layer2_width: "+level_layer2_width+"\nlevel_layer2_height: "+level_layer2_height+"\nlevel_layer2_xpos: "+level_layer2_xpos+"\nlevel_layer2_ypos: "+level_layer2_ypos+"\nlevel_layer_priority_2: "+level_layer_priority_2+"\nlevel_variable_3: "+level_variable_3+"\noneentrance: "+str(oneentrance)+"\nall_entrances: "+str(all_entrances)+"\noneexit: "+str(oneexit)+"\nall_exits: "+str(all_exits)+"\nlayer_1: "+str(layer_1)+"\nlayer_2: "+str(layer_2)+"\ncurrent_row: "+str(current_row)+"\ntiles_processed: "+str(tiles_processed)+"\n\n"+str(e)+strlib["err_line"]+str(e.__traceback__.tb_lineno)+colorScheme["default"])
             return
         
     else:
-        print(colorScheme["error"]+"Invalid level code!\nNo valid delimiters found in file."+colorScheme["default"])
+        print(strlib["err_parse_no_delimiters"])
         return
         
-def exportAll(fileFormat):
+def exportAll(fileFormat, filePath):
     if game=="smf" or game=="smfe":
-        if fileFormat=="csv" or fileFormat=="txt" or fileFormat=="map":
-            filePath=filedialog.askdirectory()
+        if fileFormat=="csv" or fileFormat=="txt" or fileFormat=="map": # this should be put elsewhere ###############
+            if filePath=="":
+                filePath=filedialog.askdirectory()
         else:
-            print(colorScheme["typeerror"]+"Invalid file format!"+colorScheme["default"])
+            print(strlib["te_file_type"])
             return
         if filePath=="":
-            print(colorScheme["typeerror"]+"No Path Selected!"+colorScheme["default"])
+            print(strlib["te_file_save_decline"])
             return
         if fileFormat=="csv":
             output=""
@@ -2202,7 +1580,7 @@ def exportAll(fileFormat):
                 file.write(output)
                 file.close()
             except PermissionError:
-                print(colorScheme["typeerror"]+"File in use!"+colorScheme["default"])
+                print(strlib["te_file_busy"])
             output=""
             print("Processing Bonus tiles...")
             for i in bonus:
@@ -2216,7 +1594,7 @@ def exportAll(fileFormat):
                 file.write(output)
                 file.close()
             except PermissionError:
-                print(colorScheme["typeerror"]+"File in use!"+colorScheme["default"])
+                print(strlib["te_file_busy"])
         elif fileFormat=="txt":
             output="("
             for i in level:
@@ -2252,7 +1630,7 @@ def exportAll(fileFormat):
                 file.write(output)
                 file.close()
             except PermissionError:
-                print(colorScheme["typeerror"]+"File in use!"+colorScheme["default"])
+                print(strlib["te_file_busy"])
         elif fileFormat=="map":
             output=""
             for i in level:
@@ -2267,7 +1645,7 @@ def exportAll(fileFormat):
                 file.write(output)
                 file.close()
             except PermissionError:
-                print(colorScheme["typeerror"]+"File in use!"+colorScheme["default"])
+                print(strlib["te_file_busy"])
             output=""
             for i in bonus:
                 for j in i:
@@ -2281,13 +1659,13 @@ def exportAll(fileFormat):
                 file.write(output)
                 file.close()
             except PermissionError:
-                print(colorScheme["typeerror"]+"File in use!"+colorScheme["default"])
-        print(colorScheme["success"]+"Success!"+colorScheme["default"])
+                print(strlib["te_file_busy"])
+        print(strlib["success"])
         return
     elif game=="smf2" or game=="smf2c":
         filePath=filedialog.askdirectory()
         if filePath=="":
-            print(colorScheme["typeerror"]+"No Path Selected!"+colorScheme["default"])
+            print(strlib["te_file_save_decline"])
             return
         if fileFormat=="csv":
             output=""
@@ -2306,7 +1684,7 @@ def exportAll(fileFormat):
                 file.write(output)
                 file.close()
             except PermissionError:
-                print(colorScheme["typeerror"]+"File in use!"+colorScheme["default"])
+                print(strlib["te_file_busy"])
             output=""
             tiles_read=0
             for i in layer_2:
@@ -2324,7 +1702,7 @@ def exportAll(fileFormat):
                 file.write(output)
                 file.close()
             except PermissionError:
-                print(colorScheme["typeerror"]+"File in use!"+colorScheme["default"])
+                print(strlib["te_file_busy"])
         elif fileFormat=="txt":
             output="&"+level_name+"&"+level_description+"&"+level_author+"&"+level_message+"&"
             if level_background==11:
@@ -2354,7 +1732,7 @@ def exportAll(fileFormat):
                 file.write(output)
                 file.close()
             except PermissionError:
-                print(colorScheme["typeerror"]+"File in use!"+colorScheme["default"])
+                print(strlib["te_file_busy"])
         elif fileFormat=="map":
             output=""
             for i in layer_1:
@@ -2369,7 +1747,7 @@ def exportAll(fileFormat):
                 file.write(output)
                 file.close()
             except PermissionError:
-                print(colorScheme["typeerror"]+"File in use!"+colorScheme["default"])
+                print(strlib["te_file_busy"])
             output=""
             for i in layer_2:
                 for j in i:
@@ -2383,19 +1761,19 @@ def exportAll(fileFormat):
                 file.write(output)
                 file.close()
             except PermissionError:
-                print(colorScheme["typeerror"]+"File in use!"+colorScheme["default"])
+                print(strlib["te_file_busy"])
         else:
-            print(colorScheme["typeerror"]+"Invalid file format!"+colorScheme["default"])
+            print(strlib["te_file_type"])
             return
-        print(colorScheme["success"]+"Success!"+colorScheme["default"])
+        print(strlib["success"])
         return
     else:
-        print(colorScheme["typeerror"]+"No level in memory!"+colorScheme["default"])
+        print(strlib["te_no_level"])
         return
 
-def importTiles(toModify):
+def importTiles(toModify, filePath):
     if toModify=="":
-        print(colorScheme["typeerror"]+"No property specified!"+colorScheme["default"])
+        print(strlib["te_import_unspecified"])
         return
     
     global level
@@ -2435,15 +1813,9 @@ def importTiles(toModify):
         else:
             print(colorScheme["typeerror"]+"Invalid Property!"+colorScheme["default"])
             return
-        filePath=filedialog.askopenfilename(title="Please open Super Mario Flash level tiles.")
+        
+        filePath, file_data=openFile(filePath)
         if filePath=="":
-            print(colorScheme["typeerror"]+"No File Opened!"+colorScheme["default"])
-            return
-        file=open(filePath,mode='r', encoding="utf-8")
-        try:
-            file_data=file.read()
-        except UnicodeDecodeError:
-            print(colorScheme["error"]+"Invalid file!\nConsider converting your level data to txt or csv."+colorScheme["default"])
             return
         tile=""
         row=[]
@@ -2501,9 +1873,9 @@ def importTiles(toModify):
         elif toModify=="layer 2" or toModify=="layer2" or toModify=="l2":
             if level_layer2_height!=len(layer_2)*20:
                 level_layer2_height=len(layer_2)*20
-        print(colorScheme["success"]+"Success!"+colorScheme["default"])
+        print(strlib["success"])
     else:
-        print(colorScheme["typeerror"]+"No level in memory!"+colorScheme["default"])
+        print(strlib["te_no_level"])
         return
 
 def smfWarpModifier(yPos,xPos,sublevel,xPosTo,yPosTo,playerDir,animation):
@@ -2525,7 +1897,7 @@ def smfWarpModifier(yPos,xPos,sublevel,xPosTo,yPosTo,playerDir,animation):
     try:
         console=curses.initscr()
     except:
-        print(colorScheme["error"]+"Current console environment does not support Curses."+colorScheme["default"])
+        print(strlib["err_curses_load"])
         return [yPos,xPos,sublevel,xPosTo,yPosTo,playerDir,animation]
     curses.noecho()
     curses.cbreak()
@@ -2540,9 +1912,9 @@ def smfWarpModifier(yPos,xPos,sublevel,xPosTo,yPosTo,playerDir,animation):
     console.addstr(3,0,"In sublevel: ")
     console.addstr(4,0,"Facing: ")
     console.addstr(5,0,"Animation: ")
-    console.addstr(7,0,"[Cancel]")
-    console.addstr(8,0,"[Save]")
-    current_item=-1
+    console.addstr(7,0,f"[{strlib['opt_btn_cancel']}]")
+    console.addstr(8,0,f"[{strlib['opt_btn_save']}]")
+    current_item=0
     old_data=[yPos,xPos,sublevel,xPosTo,yPosTo,playerDir,animation]
     temp_new=0
     while True:
@@ -2553,8 +1925,8 @@ def smfWarpModifier(yPos,xPos,sublevel,xPosTo,yPosTo,playerDir,animation):
         console.addstr(3,13,"Level Bonus")
         console.addstr(4,8,"right left")
         console.addstr(5,11,"Appear Up Down Left Right")
-        console.addstr(7,1,"Cancel")
-        console.addstr(8,1,"Save")
+        console.addstr(7,1,strlib["opt_btn_cancel"])
+        console.addstr(8,1,strlib["opt_btn_save"])
         
         if sublevel=="Level":
             console.addstr(3,13,"Level",curses.A_REVERSE)
@@ -2586,9 +1958,9 @@ def smfWarpModifier(yPos,xPos,sublevel,xPosTo,yPosTo,playerDir,animation):
         elif current_item==3:
             console.addstr(2,17,yPosTo.rjust(3),curses.A_REVERSE)
         elif current_item==7:
-            console.addstr(7,1,"Cancel",curses.A_REVERSE)
+            console.addstr(7,1,strlib["opt_btn_cancel"],curses.A_REVERSE)
         elif current_item==8:
-            console.addstr(8,1,"Save",curses.A_REVERSE)
+            console.addstr(8,1,strlib["opt_btn_save"],curses.A_REVERSE)
         console.refresh()
         key=console.getch()
         console.refresh()
@@ -2657,7 +2029,7 @@ def smf2WarpModifier(mode,xPos,yPos,warpType,extraVar):
     try:
         console=curses.initscr()
     except:
-        print(colorScheme["error"]+"Current console environment does not support Curses."+colorScheme["default"])
+        print(strlib["err_curses_load"])
         return
     curses.noecho()
     curses.cbreak()
@@ -2673,9 +2045,9 @@ def smf2WarpModifier(mode,xPos,yPos,warpType,extraVar):
         console.addstr(3,0,"Player Status: ◄  ►")
     elif mode=="Exits":
         console.addstr(3,0,"Linked to ID # ◄  ►")
-    console.addstr(5,0,"[Cancel]")
-    console.addstr(6,0,"[Save]")
-    current_item=-1
+    console.addstr(5,0,f"[{strlib['opt_btn_cancel']}]")
+    console.addstr(6,0,f"[{strlib['opt_btn_save']}]")
+    current_item=0
     old_data=[xPos,yPos,warpType,extraVar]
     temp_new=0
     while True:
@@ -2686,8 +2058,8 @@ def smf2WarpModifier(mode,xPos,yPos,warpType,extraVar):
             console.addstr(3,16,extraVar.rjust(2))
         else:
             console.addstr(3,16,str(int(extraVar)+1).rjust(2))
-        console.addstr(5,1,"Cancel")
-        console.addstr(6,1,"Save")
+        console.addstr(5,1,strlib["opt_btn_cancel"])
+        console.addstr(6,1,strlib["opt_btn_save"])
         
         if current_item==0:
             console.addstr(1,11,xPos.rjust(6),curses.A_REVERSE)
@@ -2701,9 +2073,9 @@ def smf2WarpModifier(mode,xPos,yPos,warpType,extraVar):
             else:
                 console.addstr(3,16,str(int(extraVar)+1).rjust(2),curses.A_REVERSE)
         elif current_item==4:
-            console.addstr(5,1,"Cancel",curses.A_REVERSE)
+            console.addstr(5,1,strlib["opt_btn_cancel"],curses.A_REVERSE)
         elif current_item==5:
-            console.addstr(6,1,"Save",curses.A_REVERSE)
+            console.addstr(6,1,strlib["opt_btn_save"],curses.A_REVERSE)
         console.refresh()
         key=console.getch()
         console.refresh()
@@ -2780,10 +2152,7 @@ def smf2WarpModifier(mode,xPos,yPos,warpType,extraVar):
                     if int(extraVar)<len(all_entrances)-1:
                         extraVar=str(int(extraVar)+1)
 
-def replace(data):
-    sys.stdin.flush()
-    
-    toModify=""
+def replace(toModify, data):
     toModifySub=""
     
     global game
@@ -2825,87 +2194,6 @@ def replace(data):
     global layer_2
     
     if game!="":
-        if data[:7]=="header ":
-            toModify="header"
-            data=data[7:]
-        elif data[:5]=="head ":
-            toModify="header"
-            data=data[5:]
-        elif data[:2]=="h ":
-            toModify="header"
-            data=data[2:]
-        elif data=="header" or data=="head":
-            toModify="header"
-            data=""
-        elif data[:1]=="h":
-            toModify="header"
-            data=data[1:]
-        elif data[:5]=="warp ":
-            toModify="warps"
-            data=data[5:]
-        elif data[:4]=="warp":
-            toModify="warps"
-            data=data[4:]
-        elif data[:2]=="w ":
-            toModify="warps"
-            data=data[2:]
-        elif data[:5]=="warps":
-            toModify="warps"
-            data=""
-        elif data[:1]=="w":
-            toModify="warps"
-            data=data[1:]
-        elif data[:9]=="entrance ":
-            toModify="entrances"
-            data=data[9:]
-        elif data[:8]=="entrance":
-            toModify="entrances"
-            data=data[8:]
-        elif data[:5]=="entr ":
-            toModify="entrances"
-            data=data[5:]
-        elif data[:4]=="entr":
-            toModify="entrances"
-            data=data[4:]
-        elif data[:9]=="entrances":
-            toModify="entrances"
-            data=""
-        elif data[:2]=="n ":
-            toModify="entrances"
-            data=data[2:]
-        elif data[:1]=="n":
-            toModify="entrances"
-            data=data[1:]
-        elif data[:5]=="exit ":
-            toModify="exits"
-            data=data[5:]
-        elif data[:4]=="exit":
-            toModify="exits"
-            data=data[4:]
-        elif data[:5]=="exits":
-            toModify="exits"
-            data=""
-        elif data[:2]=="x ":
-            toModify="exits"
-            data=data[2:]
-        elif data[:1]=="x":
-            toModify="exits"
-            data=data[1:]
-        elif data[:6]=="tiles ":
-            toModify="tiles"
-            data=data[6:]
-        elif data[:5]=="tiles":
-            toModify="tiles"
-            data=data[5:]
-        elif data[:2]=="t ":
-            toModify="tiles"
-            data=data[2:]
-        elif data[:1]=="t":
-            toModify="tiles"
-            data=data[1:]
-        else:
-            print(colorScheme["typeerror"]+"Invalid attribute!"+colorScheme["default"])
-            return
         if toModify=="header":
             if data[:5]=="name ":
                 toModifySub="name"
@@ -3246,7 +2534,7 @@ def replace(data):
             elif data=="":
                 toModifySub=""
             else:
-                print(colorScheme["typeerror"]+"Invalid attribute!"+colorScheme["default"])
+                print(strlib["te_attribute"])
                 return
         elif toModify=="warps":
             if data[:6].lower()=="level ":
@@ -3285,7 +2573,7 @@ def replace(data):
             elif data[:1]=="b":
                 sublevel="Bonus"
                 data=data[1:]
-            if data=="+":
+            elif data=="+":
                 toModifySub="add"
             else:
                 warpNum=""
@@ -3414,7 +2702,7 @@ def replace(data):
                     toModifySub="type"
                     data=""
                 elif data!="":
-                    print(colorScheme["typeerror"]+"Invalid attribute!"+colorScheme["default"])
+                    print(strlib["te_attribute"])
                     return
         elif toModify=="entrances" or toModify=="exits":
             if data=="+" or data=="add":
@@ -3525,7 +2813,7 @@ def replace(data):
                     toModifySub="linkto"
                     data=""
                 elif data!="":
-                    print(colorScheme["typeerror"]+"Invalid attribute!"+colorScheme["default"])
+                    print(strlib["te_attribute"])
                     return
         elif toModify=="tiles":
             if data[:8]=="layer 1 ":
@@ -3601,7 +2889,7 @@ def replace(data):
                 sublevel="bns"
                 data=data[1:]
             else:
-                print(colorScheme["typeerror"]+"Invalid attribute!"+colorScheme["default"])
+                print(strlib["te_attribute"])
                 return
             tileReplacerValues=["","","","",""]
             tileReplacerIndex=0
@@ -3629,257 +2917,257 @@ def replace(data):
                 if data!="":
                     level_name=data
                 else:
-                    level_name=input("Change level name from «"+level_name+"» to: ")
+                    level_name=input(f"Change level name from «{level_name}» to: ", level_name)
                 print("Successfully changed level name!")
             elif toModifySub=="lvlwidth":
                 if game=="smf" or game=="smfe":
                     if data!="":
                         level_width=data
                     else:
-                        level_width=input("Change level width from "+level_width+" to: ")
+                        level_width=input(f"Change level width from {level_width} to: ", level_width)
                     try:
-                        print("Successfully changed level width to "+level_width+" ("+str(int(level_width)/20)+" tiles)")
+                        print(f"Successfully changed level width to {level_width} ({int(level_width)/20} tiles)")
                     except:
-                        print("Successfully changed level width to "+level_width+" (not an integer - issues may occur)")
+                        print(f"Successfully changed level width to {level_width} (not an integer - issues may occur)")
                 elif game=="smf2" or game=="smf2c":
-                    print(colorScheme["typeerror"]+"Changing the level width in an SMF2 level without changing the level tiles will cause issues. Action denied."+colorScheme["default"])
+                    print(strlib["te_rep_smf2_width"])
             elif toModifySub=="lvlbg":
                 if game=="smf" or game=="smfe":
                     if data!="":
                         level_background=data
                     else:
-                        level_background=input("Change level background from "+level_background+" to: ")
+                        level_background=input(f"Change level background from {level_background} to: ", level_background)
                     try:
                         if int(level_background)>6:
                             print("Game forced to switch to SMF E")
                             game="smfe"
-                        print("Successfully changed level background to "+level_background+" ("+smfe_background_names[int(level_background)]+")")
+                        print(f"Successfully changed level background to {level_background} ({smfe_background_names[int(level_background)]})")
                     except:
-                        print("Successfully changed level background to "+level_background+" ("+smfe_background_names[0]+")")
+                        print(f"Successfully changed level background to {level_background} ({smfe_background_names[0]})")
                 elif game=="smf2" or game=="smf2c":
-                    print(colorScheme["typeerror"]+"SMF2 has no sublevel distinction."+colorScheme["default"])
+                    print(strlib["te_rep_smf2_sublvl"])
             elif toModifySub=="lvlmus":
                 if game=="smf" or game=="smfe":
                     if data!="":
                         level_music=data
                     else:
-                        level_music=input("Change level music from "+level_music+" to: ")
+                        level_music=input(f"Change level music from {level_music} to: ",level_music)
                     try:
                         if int(level_music)>11:
                             print("Game forced to switch to SMF E")
                             game="smfe"
-                        print("Successfully changed level music to "+level_music+" ("+smfe_music_names[int(level_music)]+")")
+                        print(f"Successfully changed level music to {level_music} ({smfe_music_names[int(level_music)]})")
                     except:
-                        print("Successfully changed level music to "+level_music+" ("+smfe_music_names[0]+")")
+                        print(f"Successfully changed level music to {level_music} ({smfe_music_names[0]})")
                 elif game=="smf2" or game=="smf2c":
-                    print(colorScheme["typeerror"]+"SMF2 has no sublevel distinction."+colorScheme["default"])
+                    print(strlib["te_rep_smf2_sublvl"])
             elif toModifySub=="bnsbg":
                 if game=="smf" or game=="smfe":
                     if data!="":
                         bonus_background=data
                     else:
-                        bonus_background=input("Change bonus background from "+bonus_background+" to: ")
+                        bonus_background=input(f"Change bonus background from {bonus_background} to: ", bonus_background)
                     try:
                         if int(bonus_background)>6:
                             print("Game forced to switch to SMF E")
                             game="smfe"
-                        print("Successfully changed bonus background to "+bonus_background+" ("+smfe_background_names[int(bonus_background)]+")")
+                        print(f"Successfully changed bonus background to {bonus_background} ({smfe_background_names[int(bonus_background)]})")
                     except:
-                        print("Successfully changed bonus background to "+bonus_background+" ("+smfe_background_names[0]+")")
+                        print(f"Successfully changed bonus background to {bonus_background} ({smfe_background_names[0]})")
                 elif game=="smf2" or game=="smf2c":
-                    print(colorScheme["typeerror"]+"SMF2 has no sublevel distinction."+colorScheme["default"])
+                    print(strlib["te_rep_smf2_sublvl"])
             elif toModifySub=="bnsmus":
                 if game=="smf" or game=="smfe":
                     if data!="":
                         bonus_music=data
                     else:
-                        bonus_music=input("Change bonus music from "+bonus_music+" to: ")
+                        bonus_music=input(f"Change bonus music from {bonus_music} to: ", bonus_music)
                     try:
                         if int(bonus_music)>11:
                             print("Game forced to switch to SMF E")
                             game="smfe"
-                        print("Successfully changed bonus music to "+bonus_music+" ("+smfe_music_names[int(bonus_music)]+")")
+                        print(f"Successfully changed bonus music to {bonus_music} ({smfe_music_names[int(bonus_music)]})")
                     except:
-                        print("Successfully changed bonus music to "+bonus_music+" ("+smfe_music_names[0]+")")
+                        print(f"Successfully changed bonus music to {bonus_music} ({smfe_music_names[0]})")
                 elif game=="smf2" or game=="smf2c":
-                    print(colorScheme["typeerror"]+"SMF2 has no sublevel distinction."+colorScheme["default"])
+                    print(strlib["te_rep_smf2_sublvl"])
             elif toModifySub=="startx":
                 if game=="smf" or game=="smfe":
                     if data!="":
                         start_xpos=data
                     else:
-                        start_xpos=input("Change start xPos from "+start_xpos+" to: ")
+                        start_xpos=input(f"Change start xPos from {start_xpos} to: ", start_xpos)
                     try:
-                        print("Successfully changed start xPos to "+start_xpos+" ("+int(start_xpos)/20+" tiles)")
+                        print(f"Successfully changed start xPos to {start_xpos} ({int(start_xpos)/20} tiles)")
                     except:
-                        print("Successfully changed start xPos to "+start_xpos+" (0 tiles)")
+                        print(f"Successfully changed start xPos to {start_xpos} (0 tiles)")
                 elif game=="smf2" or game=="smf2c":
-                    print(colorScheme["typeerror"]+"In SMF2, player's start coordinates are stored in entrance data, not the header."+colorScheme["default"])
+                    print(strlib["te_rep_smf2_start"])
             elif toModifySub=="starty":
                 if game=="smf" or game=="smfe":
                     if data!="":
                         start_ypos=data
                     else:
-                        start_ypos=input("Change start yPos from "+start_ypos+" to: ")
+                        start_ypos=input(f"Change start yPos from {start_ypos} to: ", start_ypos)
                     try:
-                        print("Successfully changed start yPos to "+start_ypos+" ("+int(start_ypos)/20+" tiles)")
+                        print(f"Successfully changed start yPos to {start_ypos} ({int(start_ypos)/20} tiles)")
                     except:
-                        print("Successfully changed start yPos to "+start_ypos+" (0 tiles)")
+                        print(f"Successfully changed start yPos to {start_ypos} (0 tiles)")
                 elif game=="smf2" or game=="smf2c":
-                    print(colorScheme["typeerror"]+"In SMF2, player's start coordinates are stored in entrance data, not the header."+colorScheme["default"])
+                    print(strlib["te_rep_smf2_start"])
             elif toModifySub=="startat":
                 if game=="smf" or game=="smfe":
                     if data=="":
-                        start_at=input("Change start sublevel from "+start_at+" to: ")
+                        start_at=input(f"Change start sublevel from {start_at} to: ", start_at)
                     if data.lower()=="level" or data.lower()=="lvl" or data.lower()=="l":
                         start_at="Level"
                     elif data.lower()=="bonus" or data.lower()=="bns" or data.lower()=="b":
                         start_at="Bonus"
                     else:
-                        print(colorScheme["typeerror"]+"Invalid sublevel!"+colorScheme["default"])
+                        print(strlib["te_rep_sublvl"])
                         return
                     print("Successfully changed start sublevel to "+start_at)
                 elif game=="smf2" or game=="smf2c":
-                    print(colorScheme["typeerror"]+"SMF2 has no sublevel distinction."+colorScheme["default"])
+                    print(strlib["te_rep_smf2_sublvl"])
             elif toModifySub=="desc":
                 if game=="smf2" or game=="smf2c":
                     if data!="":
                         level_description=data
                     else:
-                        level_description=input("Change level description to: ")
+                        level_description=input("Change level description to: ", level_description)
                     print("Successfully changed level description!")
                 elif game=="smf" or game=="smfe":
-                    print(colorScheme["typeerror"]+"No description attribute exists for SMF."+colorScheme["default"])
+                    print(strlib["te_rep_smf_desc"])
             elif toModifySub=="bg":
                 if game=="smf2" or game=="smf2c":
                     if data!="":
                         level_background=data
                     else:
-                        level_background==input("Change background from "+level_background+" to: ")
+                        level_background==input(f"Change background from {level_background} to: ", level_background)
                     if game=="smf2c":
                         try:
-                            print("Successfully changed background to "+level_background+" ("+smf2c_background_names[int(level_background)]+")")
+                            print(f"Successfully changed background to {level_background} ({smf2c_background_names[int(level_background)]})")
                         except:
-                            print("Successfully changed background to "+level_background+" ("+smf2c_background_names[0]+")")
+                            print(f"Successfully changed background to {level_background} ({smf2c_background_names[0]})")
                     else:
                         try:
                             if int(level_background)>11:
                                 print("Game forced to switch to SMF2 C")
                                 game="smf2c"
-                                print("Successfully changed background to "+level_background+" ("+smf2c_background_names[int(level_background)]+")")
+                                print(f"Successfully changed background to {level_background} ({smf2c_background_names[int(level_background)]})")
                             else:
-                                print("Successfully changed background to "+level_background+" ("+smf2_background_names[int(level_background)]+")")
+                                print(f"Successfully changed background to {level_background} ({smf2_background_names[int(level_background)]})")
                         except:
-                            print("Successfully changed background to "+level_background+" ("+smf2_background_names[0]+")")
+                            print(f"Successfully changed background to {level_background} ({smf2_background_names[0]})")
                 elif game=="smf" or game=="smfe":
-                    print(colorScheme["typeerror"]+"No background attribute exists for SMF. Please specify whether you're modifying a level or bonus background."+colorScheme["default"])
+                    print(strlib["te_rep_smf_bg"])
             elif toModifySub=="mus":
                 if game=="smf2" or game=="smf2c":
                     if data!="":
                         level_music=data
                     else:
-                        level_music=input("Change background from "+level_music+" to: ")
+                        level_music=input(f"Change music from {level_music} to: ", level_music)
                     if game=="smf2c":
                         try:
-                            print("Successfully changed music to "+level_music+" ("+smf2c_music_names[int(level_music)]+")")
+                            print(f"Successfully changed music to {level_music} ({smf2c_music_names[int(level_music)]})")
                         except:
-                            print("Successfully changed music to "+level_music+" ("+smf2c_music_names[0]+")")
+                            print(f"Successfully changed music to {level_music} ({smf2c_music_names[0]})")
                     else:
                         try:
                             if int(level_music)==19:
                                 print("Game forced to switch to SMF2 C")
                                 game="smf2c"
-                            print("Successfully changed music to "+level_music+" ("+smf2c_music_names[int(level_music)]+")")
+                            print(f"Successfully changed music to {level_music} ({smf2c_music_names[int(level_music)]})")
                         except:
-                            print("Successfully changed music to "+level_music+" ("+smf2c_music_names[0]+")")
+                            print(f"Successfully changed music to {level_music} ({smf2c_music_names[0]})")
                 elif game=="smf" or game=="smfe":
-                    print(colorScheme["typeerror"]+"No music attribute exists for SMF. Please specify whether you're modifying the level or bonus music."+colorScheme["default"])
+                    print(strlib["te_rep_smf_mus"])
             elif toModifySub=="powerup":
                 if game=="smf2" or game=="smf2c":
                     if data!="":
                         level_powerup=data
                     else:
-                        level_powerup=input("Change start state from "+level_powerup+" to: ")
+                        level_powerup=input(f"Change start state from {level_powerup} to: ", level_powerup)
                     try:
-                        print("Successfully changed start state to "+level_powerup+" ("+smf2_powerup_names[int(level_powerup)]+")")
+                        print(f"Successfully changed start state to {level_powerup} ({smf2_powerup_names[int(level_powerup)]})")
                     except:
-                        print("Successfully changed start state to "+level_powerup+" ("+smf2_powerup_names[29]+")")
+                        print(f"Successfully changed start state to {level_powerup} ({smf2_powerup_names[29]})")
                 elif game=="smf" or game=="smfe":
-                    print(colorScheme["typeerror"]+"No start state attribute exists for SMF."+colorScheme["default"])
+                    print(strlib["te_rep_smf_powerup"])
             elif toModifySub=="url1":
                 if game=="smf2" or game=="smf2c":
                     if data!="":
                         level_url1=data
                     else:
-                        level_url1=input("Change background url 1 to: ")
-                    print("Game forced to switch to background 11 ("+smf2_background_names[11]+")")
+                        level_url1=input("Change background url 1 to: ", level_url1)
+                    print(f"Game forced to switch to background 11 ({smf2_background_names[11]})")
                     level_background=11
                     print("Successfully changed background url 1 to "+level_url1)
                 elif game=="smf" or game=="smfe":
-                    print(colorScheme["typeerror"]+"SMF has no custom backgrounds."+colorScheme["default"])
+                    print(strlib["te_rep_smf_url"])
             elif toModifySub=="url2":
                 if game=="smf2" or game=="smf2c":
                     if data!="":
                         level_bg_url2=data
                     else:
-                        level_bg_url2=input("Change background url 2 to: ")
-                    print("Game forced to switch to background 11 ("+smf2_background_names[11]+")")
+                        level_bg_url2=input("Change background url 2 to: ", level_bg_url2)
+                    print(f"Game forced to switch to background 11 ({smf2_background_names[11]})")
                     level_background=11
                     print("Successfully changed background url 2 to "+level_bg_url2)
                 elif game=="smf" or game=="smfe":
-                    print(colorScheme["typeerror"]+"SMF has no custom backgrounds."+colorScheme["default"])
+                    print(strlib["te_rep_smf_url"])
             elif toModifySub=="layerpri1":
                 if game=="smf2" or game=="smf2c":
                     if data!="":
                         level_layer_priority=data
                     else:
-                        level_layer_priority=input("Change layer priority 1 from "+level_layer_priority+" to: ")
+                        level_layer_priority=input(f"Change layer priority 1 from {level_layer_priority} to: ")
                     print("Successfully changed layer priority 1 to "+level_layer_priority)
                 elif game=="smf" or game=="smfe":
-                    print(colorScheme["typeerror"]+"SMF has no layers."+colorScheme["default"])
+                    print(strlib["te_rep_smf_layer"])
             elif toModifySub=="layerpri2":
                 if game=="smf2" or game=="smf2c":
                     if data!="":
                         level_layer_priority_2=data
                     else:
-                        level_layer_priority_2=input("Change layer priority 2 from "+level_layer_priority_2+" to: ")
+                        level_layer_priority_2=input(f"Change layer priority 2 from {level_layer_priority_2} to: ")
                     print("Successfully changed layer priority 2 to "+level_layer_priority_2)
                 elif game=="smf" or game=="smfe":
-                    print(colorScheme["typeerror"]+"SMF has no layers."+colorScheme["default"])
+                    print(strlib["te_rep_smf_layer"])
             elif toModifySub=="layer2x":
                 if game=="smf2" or game=="smf2c":
                     if data!="":
                         level_layer2_xpos=data
                     else:
-                        level_layer2_xpos=input("Change layer 2 xPos from "+level_layer2_xpos+" to: ")
+                        level_layer2_xpos=input(f"Change layer 2 xPos from {level_layer2_xpos} to: ")
                     print("Successfully changed layer 2 xPos to "+level_layer2_xpos)
                 elif game=="smf" or game=="smfe":
-                    print(colorScheme["typeerror"]+"SMF has no layers."+colorScheme["default"])
+                    print(strlib["te_rep_smf_layer"])
             elif toModifySub=="layer2y":
                 if game=="smf2" or game=="smf2c":
                     if data!="":
                         level_layer2_ypos=data
                     else:
-                        level_layer2_ypos=input("Change layer 2 yPos from "+level_layer2_ypos+" to: ")
+                        level_layer2_ypos=input(f"Change layer 2 yPos from {level_layer2_ypos} to: ")
                     print("Successfully changed layer 2 yPos to "+level_layer2_ypos)
                 elif game=="smf" or game=="smfe":
-                    print(colorScheme["typeerror"]+"SMF has no layers."+colorScheme["default"])
+                    print(strlib["te_rep_smf_layer"])
             elif toModifySub=="":
                 global decorType
                 
                 try:
                     console=curses.initscr()
                 except:
-                    print(colorScheme["error"]+"Current console environment does not support Curses."+colorScheme["default"])
+                    print(strlib["err_curses_load"])
                     return
                 curses.noecho()
                 curses.cbreak()
                 console.keypad(True)
                 console.clear()
                 if decorType!=0:
-                    console.addstr(0,0," Header ".center(screenx,decorTypes[decorType]))
+                    console.addstr(0,0,f" {strlib['title_r_h']} ".center(screenx,decorTypes[decorType]))
                 else:
-                    console.addstr(0,0,"Header")
+                    console.addstr(0,0,strlib["title_r_h"])
                 if game=="smf":
                     console.addstr(1,0,"Game version: Super Mario Flash")
                 elif game=="smfe":
@@ -3898,9 +3186,9 @@ def replace(data):
                     console.addstr(6,0,"Bonus Background: ◄  ►")
                     console.addstr(7,0,"Bonus Music: ◄  ►")
                     console.addstr(8,0,"Bonus Width: ◄    ►")
-                    console.addstr(10,0,"[Cancel]")
-                    console.addstr(11,0,"[Save]")
-                    current_item=-1
+                    console.addstr(10,0,f"[{strlib['opt_btn_cancel']}]")
+                    console.addstr(11,0,f"[{strlib['opt_btn_save']}]")
+                    current_item=0
                     old_data=[level_background,level_music,level_width,bonus_background,bonus_music,bonus_width]
                     temp_new=0
                     while True:
@@ -3910,8 +3198,8 @@ def replace(data):
                         console.addstr(6,19,str(bonus_background).rjust(2))
                         console.addstr(7,14,str(bonus_music).rjust(2))
                         console.addstr(8,14,str(bonus_width).rjust(4))
-                        console.addstr(10,1,"Cancel")
-                        console.addstr(11,1,"Save")
+                        console.addstr(10,1,strlib["opt_btn_cancel"])
+                        console.addstr(11,1,strlib["opt_btn_save"])
                         if current_item==0:
                             console.addstr(3,19,str(level_background).rjust(2),curses.A_REVERSE)
                         elif current_item==1:
@@ -3925,9 +3213,9 @@ def replace(data):
                         elif current_item==5:
                             console.addstr(8,14,str(bonus_width).rjust(4),curses.A_REVERSE)
                         elif current_item==6:
-                            console.addstr(10,1,"Cancel",curses.A_REVERSE)
+                            console.addstr(10,1,strlib["opt_btn_cancel"],curses.A_REVERSE)
                         elif current_item==7:
-                            console.addstr(11,1,"Save",curses.A_REVERSE)
+                            console.addstr(11,1,strlib["opt_btn_save"],curses.A_REVERSE)
                         console.refresh()
                         key=console.getch()
                         console.refresh()
@@ -3937,7 +3225,7 @@ def replace(data):
                                 if current_item==6:
                                     level_background,level_music,level_width,bonus_background,bonus_music,bonus_width=old_data
                                 curses.endwin()
-                                print("Exited header editor.")
+                                print(strlib["exit_r_h"])
                                 return
                         elif key==curses.KEY_DOWN:
                             current_item=(current_item+1)%8
@@ -4009,9 +3297,9 @@ def replace(data):
                     console.addstr(11,0,"Variable 1: ◄ ►")
                     console.addstr(12,0,"Variable 2: ◄ ►")
                     console.addstr(13,0,"Variable 3: ◄ ►")
-                    console.addstr(15,0,"[Cancel]")
-                    console.addstr(16,0,"[Save]")
-                    current_item=-1
+                    console.addstr(15,0,f"[{strlib['opt_btn_cancel']}]")
+                    console.addstr(16,0,f"[{strlib['opt_btn_save']}]")
+                    current_item=0
                     old_data=[level_background,level_url1,level_bg_url2,level_music,level_powerup,level_layer_priority,level_layer_priority_2,level_layer2_xpos,level_layer2_ypos,level_variable_1,level_variable_2,level_variable_3]
                     temp_new=0
                     while True:
@@ -4027,8 +3315,8 @@ def replace(data):
                         console.addstr(11,13,level_variable_1)
                         console.addstr(12,13,level_variable_2)
                         console.addstr(13,13,level_variable_3)
-                        console.addstr(15,1,"Cancel")
-                        console.addstr(16,1,"Save")
+                        console.addstr(15,1,strlib["opt_btn_cancel"])
+                        console.addstr(16,1,strlib["opt_btn_save"])
                         if current_item==0:
                             console.addstr(3,13,level_background.rjust(3),curses.A_REVERSE)
                         elif current_item==1:
@@ -4050,9 +3338,9 @@ def replace(data):
                         elif current_item==9:
                             console.addstr(13,13,level_variable_3,curses.A_REVERSE)
                         elif current_item==10:
-                            console.addstr(15,1,"Cancel",curses.A_REVERSE)
+                            console.addstr(15,1,strlib["opt_btn_cancel"],curses.A_REVERSE)
                         elif current_item==11:
-                            console.addstr(16,1,"Save",curses.A_REVERSE)
+                            console.addstr(16,1,strlib["opt_btn_save"],curses.A_REVERSE)
                         console.refresh()
                         key=console.getch()
                         console.refresh()
@@ -4063,7 +3351,7 @@ def replace(data):
                                 if current_item==10:
                                     level_background,level_url1,level_bg_url2,level_music,level_powerup,level_layer_priority,level_layer_priority_2,level_layer2_xpos,level_layer2_ypos,level_variable_1,level_variable_2,level_variable_3=old_data
                                 curses.endwin()
-                                print("Exited header editor.")
+                                print(strlib["exit_r_h"])
                                 return
                         elif key==curses.KEY_DOWN:
                             current_item=(current_item+1)%12
@@ -4140,7 +3428,7 @@ def replace(data):
                                 if int(level_variable_3)<0:
                                     level_variable_3=str(int(level_variable_3)+1)
             else:
-                print(colorScheme["typeerror"]+"Invalid attribute!"+colorScheme["default"])
+                print(strlib["te_attribute"])
         elif toModify=="warps":
             if game=="smf" or game=="smfe":
                 if toModifySub=="add":
@@ -4292,7 +3580,7 @@ def replace(data):
                                     modified=smfWarpModifier(modified[0],modified[1],modified[2],modified[3],modified[4],modified[5],modified[6])
                                 bonus_warps[int(warpNum)]=tuple(modified)
                 else:
-                    print(colorScheme["typeerror"]+"Invalid attribute!"+colorScheme["default"])
+                    print(strlib["te_attribute"])
             elif game=="smf2" or game=="smf2c":
                 print(colorScheme["typeerror"]+"Warps are an SMF-only property. Please refer to Entrances or Exits."+colorScheme["default"])
         elif toModify=="entrances":
@@ -4454,9 +3742,9 @@ def replace(data):
             if tileReplacerValues[2]>tileReplacerValues[3]:
                 if tileReplacerValues[3]==-1:
                     if game=="smf" or game=="smfe":
-                        print(colorScheme["typeerror"]+"SMF2 has no sublevel distinction."+colorScheme["default"])
+                        print(strlib["te_rep_smf2_sublvl"])
                     elif game=="smf2" or game=="smf2c":
-                        print(colorScheme["typeerror"]+"SMF has no layers."+colorScheme["default"])
+                        print(strlib["te_rep_smf_layer"])
                 else:
                     print(colorScheme["typeerror"]+"Y range out of order - the beginning of the range should come first."+colorScheme["default"])
                 return
@@ -4490,7 +3778,7 @@ def replace(data):
                                         length=0
                                 level[i]=tuple(modified)
                     else:
-                        print(colorScheme["typeerror"]+"SMF2 has no sublevel distinction."+colorScheme["default"])
+                        print(strlib["te_rep_smf2_sublvl"])
                         return
                 elif sublevel=="bns":
                     if game=="smf" or game=="smfe":
@@ -4518,7 +3806,7 @@ def replace(data):
                                         length=0
                                 bonus[i]=tuple(modified)
                     else:
-                        print(colorScheme["typeerror"]+"SMF2 has no sublevel distinction."+colorScheme["default"])
+                        print(strlib["te_rep_smf2_sublvl"])
                         return
                 elif sublevel=="lay1":
                     if game=="smf2" or game=="smf2c":
@@ -4546,7 +3834,7 @@ def replace(data):
                                         length=0
                                 layer_1[i]=tuple(modified)
                     else:
-                        print(colorScheme["typeerror"]+"SMF has no layers."+colorScheme["default"])
+                        print(strlib["te_rep_smf_layer"])
                         return
                 elif sublevel=="lay2":
                     if game=="smf2" or game=="smf2c":
@@ -4574,7 +3862,7 @@ def replace(data):
                                         length=0
                                 layer_2[i]=tuple(modified)
                     else:
-                        print(colorScheme["typeerror"]+"SMF has no layers."+colorScheme["default"])
+                        print(strlib["te_rep_smf_layer"])
                         return
                 if loopCount==0:
                     print(output)
@@ -4590,105 +3878,29 @@ def replace(data):
                         print("Replaced "+str(tilesReplaced)+" tiles with tile ID "+tileReplacerValues[4]+" ("+smf_tiles[0][1]+")")
         return
     else:
-        print(colorScheme["typeerror"]+"No level in memory!"+colorScheme["default"])
+        print(strlib["te_no_level"])
         return
 
 def awaitInput():
     global current_command
     global usedCommands
-    
-    awaitInput_commands={ # maybe place these at the beginning of code and make the detector a function? ############
-        "open": lambda arg: openFile(arg),
-        "export": lambda arg: exportAll(arg),
-        "import": lambda arg: importTiles(arg),
-        "settings": lambda arg: changeConfig(),
-        "replace": lambda arg: replace(arg),
-        "header": lambda arg: printInfo(),
-        "help": lambda arg: generalHelp(arg),
-        "exit": lambda arg: (clear(),exit(0))[1],
-    }
-    
-    # [accepted values,definition,cut latter text for use in argument]
-    awaitInput_deabbreviator=[
-        [["open ","o "],"open",True],
-        [["open","o"],"open",False],
-        [["export ","exp ","e "],"export",True],
-        [["export","exp","e"],"export",False],
-        [["import ","imp ","i ","i"],"import",True],
-        [["import","imp"],"import",False],
-        [["settings","set","s"],"settings",False],
-        [["replace ","rep ","r "],"replace",True],
-        [["replace","rep"],"replace",False],
-        [["r"],"replace",True],
-        [["header","h"],"header",False],
-        [["help ","? ","?"],"help",True],
-        [["help"],"help",False],
-        [["exit","x"],"exit",True],
-    ]
-    
-    def testInputMatch(toExecute):
-        for i in awaitInput_deabbreviator: # iterates through all entries of awaitInput_deabbreviator
-            for j in range(len(i[0])): # iterates through all command versions (e.g. i[0])
-                if i[2]: # check if the boolean placed in each entry is true or false
-                    if command[:len(i[0][j])]==i[0][j]: # if typed command cut to length of command version matches
-                        if toExecute:
-                            awaitInput_commands[i[1]](command[len(i[0][j]):])
-                        return True,i[0][j],command[len(i[0][j]):] # matched/not, command, argument
-                else:
-                    if command==i[0][j]: # if typed command EXPLICITLY matches with command version, highlight
-                        if toExecute:
-                            awaitInput_commands[i[1]]("")
-                        return True,i[0][j],"" # matched/not, command, dummy argument
-        return False,command # matched/not, command
 
     while True:
-        command=""
-        print("→ ", end='', flush=True)
-        while True:
-            event=keyboard.read_event()
-            if event.event_type==keyboard.KEY_DOWN:
-                key=event.name
-                if key=="enter":
-                    print("")
-                    break
-                elif key=="backspace":
-                    command=command[:-1]
-                    print("\r→ "+command+" "*(len(command)+1), end='', flush=True)
-                elif key=="space":
-                    command+=" "
-                    print(" ", end='', flush=True)
-                elif key=="down":
-                    try:
-                        current_command=(current_command+1)%len(usedCommands)
-                        command=usedCommands[current_command]
-                    except:
-                        pass
-                elif key=="up":
-                    try:
-                        current_command=(current_command-1)%len(usedCommands)
-                        command=usedCommands[current_command]
-                    except:
-                        pass
-                elif key not in ["shift","ctrl","alt","caps lock","tab","esc","left","right","print screen","left windows","right ctrl","right alt","right shift","f11"]:
-                    command+=key
-                output=""
-                if not testInputMatch(False)[0]:
-                    output+=colorScheme["typeinvalid"]+command
-                else:
-                    output+=colorScheme["command"]+testInputMatch(False)[1]+colorScheme["default"]+testInputMatch(False)[2]
-                output+=colorScheme["default"]
-                print("\r→ "+output, end='', flush=True)
+        command=input("→ ", "")
         
         usedCommands.append(command)
         if len(usedCommands)>10: ### MAKE THIS NUMBER MODIFIABLE VIA SETTINGS ###
             usedCommands.pop(0)
         current_command=len(usedCommands)
         
-        if not testInputMatch(True)[0]:
-            print(colorScheme["typeerror"]+"Invalid command!"+colorScheme["default"])
+        if not testInputMatch(command, True)[0] or not testInputMatch(command, False)[3]:
+            if not testInputMatch(command, False)[0]:
+                print(strlib["te_comm"])
+            elif testInputMatch(command, False)[2] and not testInputMatch(command, False)[3]:
+                print(strlib["te_attribute"])
 
 configLoad()
-defineColors()
+colorscheme.defineColors()
 clear()
 if decorType!=0:
     title=" SMF Level Reader v"+versionNames[programVersion]+" "
@@ -4698,11 +3910,12 @@ if decorType!=0:
     print(centered_text)
 else:
     print(colorScheme["bold"]+"SMF Level Reader v"+versionNames[programVersion]+colorScheme["default"])
-print("Visit "+colorScheme["link"]+"https://github.com/AeroPurple/SMFLevelReader"+colorScheme["default"]+" to report issues and download updates!")
+print(strlib["greet_info"])
 if firstRun:
-    print("First time? Type in "+colorScheme["command"]+"help"+colorScheme["default"]+" to get the list of commands, or type in "+colorScheme["command"]+"settings"+colorScheme["default"]+" to change how this program works.")
+    print(strlib["greet_intro"])
 time.sleep(titleScreenWaitTime/1000*16)
-print("What would you like to do?")
+print(strlib["greet_ask"])
 usedCommands=[]
 current_command=0
+current_window=checkForeground() # fix for Windows Powershell
 awaitInput()

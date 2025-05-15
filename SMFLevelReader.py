@@ -21,8 +21,26 @@ try:
 except:
     print("Critical Error: string library not found")
     exit(1)
-import colorscheme
-from colorscheme import colorScheme
+
+try:
+    import colorscheme
+    from colorscheme import colorScheme
+except:
+    colorScheme={
+        "default":"",
+        "bold":"",
+        "error":"",
+        "warning":"",
+        "success":"",
+        "link":"",
+        "null":"",
+        "typeerror":"",
+        "command":"",
+        "subcommand":"",
+        "section":"",
+        "value":"",
+        "typeinvalid":""
+    }
 
 def get_application_path():
     if hasattr(sys, 'frozen'):
@@ -42,6 +60,18 @@ except:
 
 titleScreenWaitTime=0
 decorType=0
+current_command=0
+usedCommands=[]
+        
+def checkForeground():
+    window_handle=win32gui.GetForegroundWindow()
+    window_title=win32gui.GetWindowText(window_handle)
+    return window_title
+
+current_window=checkForeground()
+
+def isFocusedConsole():
+    return checkForeground()==current_window
 
 try:
     screenx,screeny=shutil.get_terminal_size()
@@ -50,6 +80,7 @@ except:
     screeny=25
     
     output="┌"
+    message="│ "+strlib["err_con_size_1"].center(screenx-4, " ")+" │"
     for i in range (screenx-2):
         output+="─"
     output+="┐"
@@ -58,13 +89,30 @@ except:
     for i in range (screenx-2):
         output+=" "
     output+="│"
-    for i in range (screeny-2):
+    print(output)
+    print(message)
+    message="│ "+strlib["err_con_size_2"].center(screenx-4, " ")+" │"
+    print(output)
+    print(message)
+    message="│ "+strlib["err_con_size_3"].center(screenx-4, " ")+" │"
+    print(output)
+    print(message)
+    message="│ "+strlib["err_con_size_4"].center(screenx-4, " ")+" │"
+    print(output)
+    print(message)
+    for i in range (screeny-10):
         print(output)
     output="└"
     for i in range (screenx-2):
         output+="─"
     output+="┘"
     print(output)
+    while True:
+        event=keyboard.read_event()
+        if event.event_type==keyboard.KEY_DOWN and isFocusedConsole():
+            key=event.name
+            if key=="enter":
+                break
 
 def clear():
     if os.name == 'nt':
@@ -85,16 +133,6 @@ def clear():
         os.system('cls')
     else:
         os.system('clear')
-        
-def checkForeground():
-    window_handle=win32gui.GetForegroundWindow()
-    window_title=win32gui.GetWindowText(window_handle)
-    return window_title
-
-current_window=checkForeground()
-
-def isFocusedConsole():
-    return checkForeground()==current_window
 
 awaitInput_commands={
     "open": lambda arg: processFile(arg),
@@ -127,12 +165,24 @@ awaitInput_deabbreviator=[
             [[""],"",False]
         ]
     ],
+    [["import ","imp ","i "],"import",True,True,False,
+        [
+            [["level ","lvl ","l "],"lvl",True],
+            [["level","lvl","l"],"lvl",False],
+            [["bonus ","bns ","b "],"bns",True],
+            [["bonus","bns","b"],"bns",False],
+            [["layer 1 ","layer1 ","l1 "],"l1",True],
+            [["layer 1","layer1","l1"],"l1",False],
+            [["layer 2 ","layer2 ","l2 "],"l2",True],
+            [["layer 2","layer2","l2"],"l2",False]
+        ]
+    ],
     [["import","imp"],"import",True,True,False,
         [
             [[""],"",False]
         ]
     ],
-    [["import ","imp ","i ","i"],"import",True,True,False,
+    [["i"],"import",True,True,False,
         [
             [["level ","lvl ","l "],"lvl",True],
             [["level","lvl","l"],"lvl",False],
@@ -249,6 +299,9 @@ def testInputMatch(command, toExecute):
     return False,command # matched/not, command
         
 def input(prefaceString, failSafeCommand):
+    global current_command
+    global usedCommands
+    
     command=""
     awaitInputMode=False
     print(prefaceString, end='', flush=True)
@@ -259,7 +312,6 @@ def input(prefaceString, failSafeCommand):
         erased=0
         event=keyboard.read_event()
         if event.event_type==keyboard.KEY_DOWN and isFocusedConsole():
-            old_slash_n=command.count("\n")
             key=event.name
             if key=="enter":
                 print("")
@@ -270,20 +322,18 @@ def input(prefaceString, failSafeCommand):
             elif key=="backspace":
                 erased=1
                 command=command[:-1]
+                current_command=len(usedCommands)
             elif key=="space":
                 command+=" "
-            elif key=="down":
-                try:
+                current_command=len(usedCommands)
+            elif key=="down" and awaitInputMode:
+                if len(usedCommands)>0:
                     current_command=(current_command+1)%len(usedCommands)
                     command=usedCommands[current_command]
-                except:
-                    pass
-            elif key=="up":
-                try:
+            elif key=="up" and awaitInputMode:
+                if len(usedCommands)>0:
                     current_command=(current_command-1)%len(usedCommands)
                     command=usedCommands[current_command]
-                except:
-                    pass
             elif len(key)<=1:
                 if key=="&" and (game=="smf2" or game=="smf2c"):
                     command+="and"
@@ -293,9 +343,7 @@ def input(prefaceString, failSafeCommand):
                     command+="]"
                 else:
                     command+=key
-            #print(new_slash_n)
-            command=command.replace("\\n","\n")
-            new_slash_n=command.count("\n")-old_slash_n
+                current_command=len(usedCommands)
             output=""
             if awaitInputMode:
                 if not testInputMatch(command, False)[0]:
@@ -315,30 +363,18 @@ def input(prefaceString, failSafeCommand):
             else:
                 output+=colorScheme["value"]+command
             output+=colorScheme["default"]
-            #print("\\n-count: "+str(command.count("\n")))
-            #print("move up and down by "+str(math.ceil((len(prefaceString)+len(command)-1)/screenx)+(command.count("\n"))))
-            #print("then move up by "+str(math.ceil((len(prefaceString)+len(command)-1+erased*2)/screenx)+(command.count("\n")))+"\n")
             
-    # OKAAAAAYYYY. so
-    # girl help
-    # why is typing characters near the end while on a new line causing weird bugs
-    # is this because of the length parameter?
-    # this is gonna be a nightmare to fix
-    # fuuuuuck
-            
-            print(u"\u001b["+str(math.ceil((len(prefaceString)+len(command)-1)/screenx)+(command.count("\n")-new_slash_n))+"A")
-            #time.sleep(0.3)
-            print(" "*(screenx*(math.ceil((len(prefaceString)+len(command)-1)/screenx)+(command.count("\n")-new_slash_n))), end='', flush=True)
-            #time.sleep(0.3)
-            print(u"\u001b["+str(math.ceil((len(prefaceString)+len(command)-1+erased*2)/screenx)+(command.count("\n")-new_slash_n))+"A")
-            #time.sleep(0.3)
+            print(u"\u001b["+str(math.ceil((len(prefaceString)+len(command)-1)/screenx))+"A")
+            print(" "*(screenx*(math.ceil((len(prefaceString)+len(command)-1)/screenx))), end='', flush=True)
+            print(u"\u001b["+str(math.ceil((len(prefaceString)+len(command)-1+erased*2)/screenx))+"A")
             print("\r"+prefaceString+output, end='', flush=True)
-    return command
+    return command.replace("\\n","\n")
 
 versionNames=[0,"0.9","0.10 Beta"]
 configVersion=0
 programVersion=2
 firstRun=False
+colorschemeMissing=False
 
 decorTypes=[" ","─","━","═"]
 
@@ -464,7 +500,10 @@ def changeConfig():
                     titleScreenWaitTime,decorType,useANSI=old_data
                 elif current_item==5:
                     configSave(programVersion,titleScreenWaitTime,decorType,useANSI)
-                colorscheme.defineColors()
+                try:
+                    colorscheme.defineColors()
+                except:
+                    pass
                 curses.endwin()
                 print(strlib["exit_s"])
                 return
@@ -1599,14 +1638,22 @@ def exportAll(fileFormat, filePath):
             output="("
             for i in level:
                 for j in i:
-                    output+=j+","
+                    try:
+                        int(j)
+                        output+=j+","
+                    except:
+                        output+="NaN,"
             try:
                 output+=level_name+","+level_background+","+start_xpos+","+start_ypos+","+level_music+","+str(int(level_width)-320)+",)("
             except:
                 output+=level_name+","+level_background+","+start_xpos+","+start_ypos+","+level_music+","+level_width+",)("
             for i in bonus:
                 for j in i:
-                    output+=j+","
+                    try:
+                        int(j)
+                        output+=j+","
+                    except:
+                        output+="NaN,"
             try:
                 output+=start_at+","+bonus_background+","+start_xpos+","+start_ypos+","+bonus_music+","+str(int(bonus_width)-320)+",)("
             except:
@@ -1692,7 +1739,6 @@ def exportAll(fileFormat, filePath):
                     print("Processed "+str(tiles_read)+"/"+str(int((int(level_layer2_height)/20)*(int(level_layer2_width)/20)))+" Layer 2 tiles ("+str(math.floor(tiles_read/((int(level_layer2_height)/20)*(int(level_layer2_width)/20))*100))+"% done)", end='\r')
                     output+=j+","
                     tiles_read+=1
-                output+="\n"
                 if output[-1:]==",":
                     output=output[:-1]
                 output+="\n"
@@ -1721,11 +1767,19 @@ def exportAll(fileFormat, filePath):
             output+="&"
             for i in layer_1:
                 for j in i:
-                    output+=j+","
+                    try:
+                        int(j)
+                        output+=j+","
+                    except:
+                        output+="NaN,"
             output+="&"
             for i in layer_2:
                 for j in i:
-                    output+=j+","
+                    try:
+                        int(j)
+                        output+=j+","
+                    except:
+                        output+="NaN,"
             output+="&"
             try:
                 file=open(str(filePath+"/"+level_name.replace("/","⧸").replace("\\","⧹").replace("*","⁎").replace("\"","‟").replace("<","❮").replace(">","❯").replace(":","˸").replace("|","⏐").replace("?","？")+".txt"),mode='w', encoding="utf-8")
@@ -1783,7 +1837,9 @@ def importTiles(toModify, filePath):
     global layer_2
     
     global level_width
+    global level_layer2_width
     global level_height
+    global level_layer2_height
     
     if game!="":
         if toModify=="level" or toModify=="lvl" or toModify=="l":
@@ -1853,26 +1909,26 @@ def importTiles(toModify, filePath):
                     row.append(tile)
                     frozen_row=tuple(row)
                     layer_1.append(frozen_row)
-                    if level_width!=len(row)*20:
-                        level_width=len(row)*20
+                    if int(level_width)!=len(row)*20:
+                        level_width=str(len(row)*20)
                     row.clear()
                     tile=""
                 elif toModify=="layer 2" or toModify=="layer2" or toModify=="l2":
                     row.append(tile)
                     frozen_row=tuple(row)
                     layer_2.append(frozen_row)
-                    if level_layer2_width!=len(row)*20:
-                        level_layer2_width=len(row)*20
+                    if int(level_layer2_width)!=len(row)*20:
+                        level_layer2_width=str(len(row)*20)
                     row.clear()
                     tile=""
             else:
                 tile+=file_data[i]
         if toModify=="layer 1" or toModify=="layer1" or toModify=="l1":
-            if level_height!=len(layer_1)*20:
-                level_height=len(layer_1)*20
+            if int(level_height)!=len(layer_1)*20:
+                level_height=str(len(layer_1)*20)
         elif toModify=="layer 2" or toModify=="layer2" or toModify=="l2":
-            if level_layer2_height!=len(layer_2)*20:
-                level_layer2_height=len(layer_2)*20
+            if int(level_layer2_height)!=len(layer_2)*20:
+                level_layer2_height=str(len(layer_2)*20)
         print(strlib["success"])
     else:
         print(strlib["te_no_level"])
@@ -3900,7 +3956,10 @@ def awaitInput():
                 print(strlib["te_attribute"])
 
 configLoad()
-colorscheme.defineColors()
+try:
+    colorscheme.defineColors()
+except:
+    colorschemeMissing=True
 clear()
 if decorType!=0:
     title=" SMF Level Reader v"+versionNames[programVersion]+" "
@@ -3910,6 +3969,8 @@ if decorType!=0:
     print(centered_text)
 else:
     print(colorScheme["bold"]+"SMF Level Reader v"+versionNames[programVersion]+colorScheme["default"])
+if colorschemeMissing:
+    print(strlib["err_color_load"])
 print(strlib["greet_info"])
 if firstRun:
     print(strlib["greet_intro"])

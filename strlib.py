@@ -1,8 +1,25 @@
-import colorscheme
-colorscheme.defineColors()
-from colorscheme import colorScheme
+try:
+    import colorscheme
+    colorscheme.defineColors()
+    from colorscheme import colorScheme
+except:
+    colorScheme={
+        "default":"",
+        "bold":"",
+        "error":"",
+        "warning":"",
+        "success":"",
+        "link":"",
+        "null":"",
+        "typeerror":"",
+        "command":"",
+        "subcommand":"",
+        "section":"",
+        "value":"",
+        "typeinvalid":""
+    }
 
-date="27 Mar 2025"
+date="14 May 2025"
 
 str={
     "err_line":" occured on line ",
@@ -15,6 +32,11 @@ str={
     "err_parse_unterminated":colorScheme["error"]+"Invalid or incomplete level code\n",
     "err_parse_tile_id":colorScheme["error"]+"Invalid tile data\n",
     "err_parse_gen":colorScheme["error"]+"exception encountered during parsing\ndata dump:\n",
+    "err_color_load":"File \"colorscheme.py\" is missing. No colors will be displayed.",
+    "err_con_size_1":"Console size could not be obtained.",
+    "err_con_size_2":"The default size of 80x25 characters has been set.",
+    "err_con_size_3":"Please manually adjust your console's window size to the size of this box.",
+    "err_con_size_4":"Press Enter when done.",
     "te_comm":colorScheme["typeerror"]+"Invalid Command!"+colorScheme["default"],
     "te_attribute":colorScheme["typeerror"]+"Invalid Attribute!"+colorScheme["default"],
     "te_import_unspecified":colorScheme["typeerror"]+"No property specified!"+colorScheme["default"],

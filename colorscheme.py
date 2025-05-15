@@ -58,5 +58,6 @@ def defineColors():
         "subcommand":DEFAULT+BOLD,
         "section":DEFAULT,
         "value":CYAN,
-        "typeinvalid":DIM_RED
+        "typeinvalid":DIM_RED,
+        "newline":MAGENTA
     }

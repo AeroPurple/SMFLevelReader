@@ -11,7 +11,12 @@ import traceback
 import time
 import re
 import shutil
-import win32gui
+try:
+    import win32gui
+except:
+    print(strlib["err_mod_win32gui"])
+    time.sleep(1)
+    
 from sys import exit
 from subprocess import call
 try:
@@ -52,11 +57,13 @@ try:
     import curses
 except:
     print(strlib["err_mod_curses"])
+    time.sleep(1)
 
 try:
     import keyboard
 except:
     print(strlib["err_mod_keyboard"])
+    time.sleep(1)
 
 titleScreenWaitTime=0
 decorType=0
@@ -64,9 +71,12 @@ current_command=0
 usedCommands=[]
         
 def checkForeground():
-    window_handle=win32gui.GetForegroundWindow()
-    window_title=win32gui.GetWindowText(window_handle)
-    return window_title
+    try:
+        window_handle=win32gui.GetForegroundWindow()
+        window_title=win32gui.GetWindowText(window_handle)
+        return window_title
+    except:
+        return 0
 
 current_window=checkForeground()
 

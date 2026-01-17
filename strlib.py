@@ -23,8 +23,9 @@ date="14 May 2025"
 
 str={
     "err_line":" occured on line ",
-    "err_mod_curses":colorScheme["error"]+"No Curses module installed."+colorScheme["default"]+"\nPlease install it using the "+colorScheme["bold"]+"pip install curses"+colorScheme["default"]+" command.",
-    "err_mod_keyboard":colorScheme["error"]+"No Keyboard module installed."+colorScheme["default"]+"\nPlease install it using the "+colorScheme["bold"]+"pip install keyboard"+colorScheme["default"]+" command.",
+    "err_mod_curses":colorScheme["error"]+"No Curses module installed."+colorScheme["default"]+"You will be unable to use settings and replace commands, as they use a Curses GUI.\nPlease install it using the "+colorScheme["bold"]+"pip install curses"+colorScheme["default"]+" command.",
+    "err_mod_keyboard":colorScheme["error"]+"No Keyboard module installed. You will be unable to type."+colorScheme["default"]+"\nPlease install it using the "+colorScheme["bold"]+"pip install keyboard"+colorScheme["default"]+" command.",
+    "err_mod_win32gui":colorScheme["error"]+"No Win32GUI module installed."+colorScheme["default"]+"The console window will be unable to know if it is highlighted.\nPlease install it using the "+colorScheme["bold"]+"pip install win32gui"+colorScheme["default"]+" command.",
     "err_conf_load":"Configuration file may be invalid.",
     "err_curses_load":colorScheme["error"]+"Current console environment does not support Curses."+colorScheme["default"],
     "err_file_unicode":colorScheme["error"]+"Invalid file!\nConsider converting your level data to txt or csv."+colorScheme["default"],

@@ -3991,7 +3991,7 @@ if firstRun:
 
 if not win32gui_imported:
     print(strlib["err_mod_win32gui"]+"\n")
-if curses_imported:
+if not curses_imported:
     print(strlib["err_mod_curses"]+"\n")
 if not keyboard_imported:
     print(strlib["err_mod_keyboard"]+"\n")

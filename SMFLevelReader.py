@@ -1243,10 +1243,46 @@ def processFile(filePath):
         except IndexError as e:
             errorString=str(e)+strlib["err_line"]+str(e.__traceback__.tb_lineno)
             print(strlib["err_parse_unterminated"]+errorString+colorScheme["default"])
+            
+            game=""
+            
+            level_name=""
+            level_background=""
+            level_music=""
+            start_xpos=""
+            start_ypos=""
+            start_at=""
+            level_width=""
+            bonus_background=""
+            bonus_music=""
+            bonus_width=""
+            level.clear()
+            bonus.clear()
+            level_warps.clear()
+            bonus_warps.clear()
+            
             return
         except ValueError as e:
             errorString=str(e)+strlib["err_line"]+str(e.__traceback__.tb_lineno)
             print(strlib["err_parse_tile_id"]+errorString+colorScheme["default"])
+            
+            game=""
+            
+            level_name=""
+            level_background=""
+            level_music=""
+            start_xpos=""
+            start_ypos=""
+            start_at=""
+            level_width=""
+            bonus_background=""
+            bonus_music=""
+            bonus_width=""
+            level.clear()
+            bonus.clear()
+            level_warps.clear()
+            bonus_warps.clear()
+            
             return
             
 
@@ -1602,6 +1638,34 @@ def processFile(filePath):
             
         except Exception as e:
             print(strlib["err_parse_gen"]+"\nlevel_name: "+level_name+"\nlevel_description: "+level_description+"\nlevel_author: "+level_author+"\nlevel_message: "+level_message+"\nlevel_background: "+level_background+"\nlevel_url1: "+level_url1+"\nlevel_bg_url2: "+level_bg_url2+"\nlevel_music: "+level_music+"\nlevel_powerup: "+level_powerup+"\nlevel_width: "+level_width+"\nlevel_height: "+level_height+"\nlevel_variable_1: "+level_variable_1+"\nlevel_variable_2: "+level_variable_2+"\nlevel_layer_priority: "+level_layer_priority+"\nlevel_layer2_width: "+level_layer2_width+"\nlevel_layer2_height: "+level_layer2_height+"\nlevel_layer2_xpos: "+level_layer2_xpos+"\nlevel_layer2_ypos: "+level_layer2_ypos+"\nlevel_layer_priority_2: "+level_layer_priority_2+"\nlevel_variable_3: "+level_variable_3+"\noneentrance: "+str(oneentrance)+"\nall_entrances: "+str(all_entrances)+"\noneexit: "+str(oneexit)+"\nall_exits: "+str(all_exits)+"\nlayer_1: "+str(layer_1)+"\nlayer_2: "+str(layer_2)+"\ncurrent_row: "+str(current_row)+"\ntiles_processed: "+str(tiles_processed)+"\n\n"+str(e)+strlib["err_line"]+str(e.__traceback__.tb_lineno)+colorScheme["default"])
+            
+            game=""
+            
+            level_name=""
+            level_background=""
+            level_music=""
+            level_width=""
+            level_description=""
+            level_author=""
+            level_message=""
+            level_url1=""
+            level_bg_url2=""
+            level_powerup=""
+            level_height=""
+            level_variable_1=""
+            level_variable_2=""
+            level_layer_priority=""
+            level_layer2_width=""
+            level_layer2_height=""
+            level_layer2_xpos=""
+            level_layer2_ypos=""
+            level_layer_priority_2=""
+            level_variable_3=""
+            all_entrances.clear()
+            all_exits.clear()
+            layer_1.clear()
+            layer_2.clear()
+            
             return
         
     else:

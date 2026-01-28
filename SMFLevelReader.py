@@ -11,11 +11,13 @@ import traceback
 import time
 import re
 import shutil
+import builtins
+win32gui_imported=False
 try:
     import win32gui
+    win32gui_imported=True
 except:
-    print(strlib["err_mod_win32gui"])
-    time.sleep(1)
+    pass
     
 from sys import exit
 from subprocess import call
@@ -53,17 +55,19 @@ def get_application_path():
     else:
         return os.path.dirname(__file__)
 
+curses_imported=False
 try:
     import curses
+    curses_imported=True
 except:
-    print(strlib["err_mod_curses"])
-    time.sleep(1)
+    pass
 
+keyboard_imported=False
 try:
     import keyboard
+    keyboard_imported=True
 except:
-    print(strlib["err_mod_keyboard"])
-    time.sleep(1)
+    pass
 
 titleScreenWaitTime=0
 decorType=0
@@ -3984,6 +3988,14 @@ if colorschemeMissing:
 print(strlib["greet_info"])
 if firstRun:
     print(strlib["greet_intro"])
+
+if not win32gui_imported:
+    print(strlib["err_mod_win32gui"]+"\n")
+if curses_imported:
+    print(strlib["err_mod_curses"]+"\n")
+if not keyboard_imported:
+    print(strlib["err_mod_keyboard"]+"\n")
+
 time.sleep(titleScreenWaitTime/1000*16)
 print(strlib["greet_ask"])
 usedCommands=[]

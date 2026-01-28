@@ -209,12 +209,45 @@ awaitInput_deabbreviator=[
         ]
     ],
     [["settings","set","s"],"settings",False],
+    [["replace ","rep ","r "],"replace",True,True,True,
+        [
+            [["header","head"],"header",False],
+            [["header ","head ","h ","h"],"header",True,
+                [
+                    
+                ]
+            ],
+            [["warps"],"warps",False],
+            [["warp ","warp","w ","w"],"warps",True,
+                [
+                    
+                ]
+            ],
+            [["entrances"],"entrances",False],
+            [["entrance ","entrance","entr ","entr","n ","n"],"entrances",True,
+                [
+                    
+                ]
+            ],
+            [["exits"],"exits",False],
+            [["exit ","exit","x ","x"],"exits",True,
+                [
+                    
+                ]
+            ],
+            [["tiles ","tiles","t ","t"],"tiles",True,
+                [
+                    
+                ]
+            ],
+        ]
+    ],
     [["replace","rep"],"replace",True,True,False,
         [
             [[""],"",False]
         ]
     ],
-    [["replace ","rep ","r ","r"],"replace",True,True,True,
+    [["r"],"replace",True,True,True,
         [
             [["header","head"],"header",False],
             [["header ","head ","h ","h"],"header",True,

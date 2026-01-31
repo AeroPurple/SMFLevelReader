@@ -214,13 +214,70 @@ awaitInput_deabbreviator=[
             [["header","head"],"header",False],
             [["header ","head ","h ","h"],"header",True,
                 [
-                    
+                    [["name ","n "],"name",True,"a",False], #values, definition, cut, compatibility, expect warp num (before the subsubcommand!)
+                    [["name","n"],"name",False,"a",False],
+                    [["level width ","lvlwidth ","lvlw ","lw ","lw"],"lvlwidth",True,"1",False],
+                    [["level width","lvlwidth","lvlw"],"lvlwidth",False,"1",False],
+                    [["level background ","lvlbg ","lb ","lb"],"lvlbg",True,"1",False],
+                    [["level background","lvlbg"],"lvlbg",False,"1",False],
+                    [["level music ","lvlmus ","lm ","lm"],"lvlmus",True,"1",False],
+                    [["level music","lvlmus"],"lvlmus",False,"1",False],
+                    [["bonus width ","bnswidth ","bnsw ","bw ","bw"],"bnswidth",True,"1",False],
+                    [["bonus width","bnswidth","bnsw"],"bnswidth",False,"1",False],
+                    [["bonus background ","bnsbg ","bb ","bb"],"bnsbg",True,"1",False],
+                    [["bonus background","bnsbg"],"bnsbg",False,"1",False],
+                    [["bonus music ","bnsmus ","bm ","bm"]],"bnsmus",True,"1",False],
+                    [["bonus music","bnsmus","bnsmus",False,"1",False],
+                    [["start x ","startx ","sx ","sx"],"startx",True,"1",False],
+                    [["start x","startx"],"starty",False,"1",False],
+                    [["start y ","starty ","sy ","sy"],"startx",True,"1",False],
+                    [["start y","starty"],"starty",False,"1",False],
+                    [["start at ","startat ","sa ","sa"],"startat",True,"1",False],
+                    [["start at","startat"],"startat",False,"1",False],
+                    [["description ","desc ","d "],"desc",True,"2",False],
+                    [["description","desc","d"],"desc",False,"2",False],
+                    [["background ","bg ","b ","b"],"bg",True,"2",False],
+                    [["background","bg"],"bg",False,"2",False],
+                    [["music ","mus ","m ","m"],"mus",True,"2",False],
+                    [["music","mus"],"mus",False,"2",False],
+                    [["startstate ","powerup ","p ","p"],"powerup",True,"2",False],
+                    [["startstate","powerup"],"powerup",False,"2",False],
+                    [["url1 ","u1 "],"url1",True,"2",False],
+                    [["url1","u1"],"url1",False,"2",False],
+                    [["url2 ","u2 "],"url2",True,"2",False],
+                    [["url2","u2"],"url2",False,"2",False],
+                    [["layer priority 1 ","layerpri1 ","lpri 1 ","lp1 "],"layerpri1",True,"2",False],
+                    [["layer priority 1","layerpri1","lpri 1","lp1"],"layerpri1",False,"2",False],
+                    [["layer priority 2 ","layerpri2 ","lpri 2 ","lp2 "],"layerpri2",True,"2",False],
+                    [["layer priority 2","layerpri2","lpri 2","lp2"],"layerpri2",False,"2",False],
+                    [["layer2 xpos ","layer2 x ","layer2x ","l2x ","l2x"],"layer2x",True,"2",False],
+                    [["layer2 xpos","layer2 x","layer2x"],"layer2x",False,"2",False],
+                    [["layer2 ypos ","layer2 y ","layer2y ","l2y ","l2y"],"layer2y",True,"2",False],
+                    [["layer2 ypos","layer2 y","layer2y"],"layer2y",False,"2",False],
+                    [[""],"",False,"a",False],
                 ]
             ],
             [["warps"],"warps",False],
             [["warp ","warp","w ","w"],"warps",True,
                 [
-                    
+                    [["level ","lvl ","l ","l"],"Level",True,"1",False],
+                    [["level","lvl"],"Level",False,"1",False],
+                    [["bonus ","bns ","b ","b"],"Bonus",True,"1",False],
+                    [["bonus","bns"],"Bonus",False,"1",False],
+                    [["add ","+ ","+"],"add",True,"1",False],
+                    [["add"],"add",False,"1",False],
+                    [["remove ","rem ","- ","-"],"remove",False,"1",True],
+                    [["remove","rem"],"remove",False,"1",True],
+                    [["xpos ","xpos","x ","x"],"xpos",True,"1",True],
+                    [["ypos ","ypos","y ","y"],"ypos",True,"1",True],
+                    [["sublevel ","sublvl ","s "],"sublvl",True,"1",True],
+                    [["sublevel","sublvl","s"],"sublvl",False,"1",True],
+                    [["xposto ","xposto","xt ","xt"],"xposto",True,"1",True],
+                    [["yposto ","yposto","yt ","yt"],"yposto",True,"1",True],
+                    [["direction ","dir ","d "],"dir",True,"1",True],
+                    [["direction","dir","d"],"dir",False,"1",True],
+                    [["animation ","anim ","type ","t "],"type",True,"1",True],
+                    [["animation","anim","type","t"],"type",False,"1",True],
                 ]
             ],
             [["entrances"],"entrances",False],
@@ -252,13 +309,70 @@ awaitInput_deabbreviator=[
             [["header","head"],"header",False],
             [["header ","head ","h ","h"],"header",True,
                 [
-                    
+                    [["name ","n "],"name",True,"a",False],
+                    [["name","n"],"name",False,"a",False],
+                    [["level width ","lvlwidth ","lvlw ","lw ","lw"],"lvlwidth",True,"1",False],
+                    [["level width","lvlwidth","lvlw"],"lvlwidth",False,"1",False],
+                    [["level background ","lvlbg ","lb ","lb"],"lvlbg",True,"1",False],
+                    [["level background","lvlbg"],"lvlbg",False,"1",False],
+                    [["level music ","lvlmus ","lm ","lm"],"lvlmus",True,"1",False],
+                    [["level music","lvlmus"],"lvlmus",False,"1",False],
+                    [["bonus width ","bnswidth ","bnsw ","bw ","bw"],"bnswidth",True,"1",False],
+                    [["bonus width","bnswidth","bnsw"],"bnswidth",False,"1",False],
+                    [["bonus background ","bnsbg ","bb ","bb"],"bnsbg",True,"1",False],
+                    [["bonus background","bnsbg"],"bnsbg",False,"1",False],
+                    [["bonus music ","bnsmus ","bm ","bm"]],"bnsmus",True,"1",False],
+                    [["bonus music","bnsmus","bnsmus",False,"1",False],
+                    [["start x ","startx ","sx ","sx"],"startx",True,"1",False],
+                    [["start x","startx"],"starty",False,"1",False],
+                    [["start y ","starty ","sy ","sy"],"startx",True,"1",False],
+                    [["start y","starty"],"starty",False,"1",False],
+                    [["start at ","startat ","sa ","sa"],"startat",True,"1",False],
+                    [["start at","startat"],"startat",False,"1",False],
+                    [["description ","desc ","d "],"desc",True,"2",False],
+                    [["description","desc","d"],"desc",False,"2",False],
+                    [["background ","bg ","b ","b"],"bg",True,"2",False],
+                    [["background","bg"],"bg",False,"2",False],
+                    [["music ","mus ","m ","m"],"mus",True,"2",False],
+                    [["music","mus"],"mus",False,"2",False],
+                    [["startstate ","powerup ","p ","p"],"powerup",True,"2",False],
+                    [["startstate","powerup"],"powerup",False,"2",False],
+                    [["url1 ","u1 "],"url1",True,"2",False],
+                    [["url1","u1"],"url1",False,"2",False],
+                    [["url2 ","u2 "],"url2",True,"2",False],
+                    [["url2","u2"],"url2",False,"2",False],
+                    [["layer priority 1 ","layerpri1 ","lpri 1 ","lp1 "],"layerpri1",True,"2",False],
+                    [["layer priority 1","layerpri1","lpri 1","lp1"],"layerpri1",False,"2",False],
+                    [["layer priority 2 ","layerpri2 ","lpri 2 ","lp2 "],"layerpri2",True,"2",False],
+                    [["layer priority 2","layerpri2","lpri 2","lp2"],"layerpri2",False,"2",False],
+                    [["layer2 xpos ","layer2 x ","layer2x ","l2x ","l2x"],"layer2x",True,"2",False],
+                    [["layer2 xpos","layer2 x","layer2x"],"layer2x",False,"2",False],
+                    [["layer2 ypos ","layer2 y ","layer2y ","l2y ","l2y"],"layer2y",True,"2",False],
+                    [["layer2 ypos","layer2 y","layer2y"],"layer2y",False,"2",False],
+                    [[""],"",False,"a",False],
                 ]
             ],
             [["warps"],"warps",False],
             [["warp ","warp","w ","w"],"warps",True,
                 [
-                    
+                    [["level ","lvl ","l ","l"],"Level",True,"1",False],
+                    [["level","lvl"],"Level",False,"1",False],
+                    [["bonus ","bns ","b ","b"],"Bonus",True,"1",False],
+                    [["bonus","bns"],"Bonus",False,"1",False],
+                    [["add ","+ ","+"],"add",True,"1",False],
+                    [["add"],"add",False,"1",False],
+                    [["remove ","rem ","- ","-"],"remove",False,"1",True],
+                    [["remove","rem"],"remove",False,"1",True],
+                    [["xpos ","xpos","x ","x"],"xpos",True,"1",True],
+                    [["ypos ","ypos","y ","y"],"ypos",True,"1",True],
+                    [["sublevel ","sublvl ","s "],"sublvl",True,"1",True],
+                    [["sublevel","sublvl","s"],"sublvl",False,"1",True],
+                    [["xposto ","xposto","xt ","xt"],"xposto",True,"1",True],
+                    [["yposto ","yposto","yt ","yt"],"yposto",True,"1",True],
+                    [["direction ","dir ","d "],"dir",True,"1",True],
+                    [["direction","dir","d"],"dir",False,"1",True],
+                    [["animation ","anim ","type ","t "],"type",True,"1",True],
+                    [["animation","anim","type","t"],"type",False,"1",True],
                 ]
             ],
             [["entrances"],"entrances",False],
@@ -3128,6 +3242,18 @@ def replace(toModify, data):
                         print(f"Successfully changed level music to {level_music} ({smfe_music_names[0]})")
                 elif game=="smf2" or game=="smf2c":
                     print(strlib["te_rep_smf2_sublvl"])
+            elif toModifySub=="bnswidth":
+                if game=="smf" or game=="smfe":
+                    if data!="":
+                        bonus_width=data
+                    else:
+                        bonus_width=input(f"Change bonus width from {bonus_width} to: ", bonus_width)
+                    try:
+                        print(f"Successfully changed bonus width to {bonus_width} ({int(bonus_width)/20} tiles)")
+                    except:
+                        print(f"Successfully changed bonus width to {bonus_width} (not an integer - issues may occur)")
+                elif game=="smf2" or game=="smf2c":
+                    print(strlib["te_rep_smf2_width"])
             elif toModifySub=="bnsbg":
                 if game=="smf" or game=="smfe":
                     if data!="":

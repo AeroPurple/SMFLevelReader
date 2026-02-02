@@ -15,6 +15,7 @@ except:
         "command":"",
         "subcommand":"",
         "section":"",
+        "id":"",
         "value":"",
         "typeinvalid":""
     }

@@ -17,6 +17,7 @@ colorScheme={
     "command":"",
     "subcommand":"",
     "section":"",
+    "id":"",
     "value":"",
     "typeinvalid":""
 }
@@ -57,6 +58,7 @@ def defineColors():
         "command":YELLOW,
         "subcommand":DEFAULT+BOLD,
         "section":DEFAULT,
+        "id":GREEN,
         "value":CYAN,
         "typeinvalid":DIM_RED,
         "newline":MAGENTA

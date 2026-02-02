@@ -45,6 +45,7 @@ except:
         "command":"",
         "subcommand":"",
         "section":"",
+        "id":"",
         "value":"",
         "typeinvalid":""
     }
@@ -214,87 +215,99 @@ awaitInput_deabbreviator=[
             [["header","head"],"header",False],
             [["header ","head ","h ","h"],"header",True,
                 [
-                    [["name ","n "],"name",True,"a",False], #values, definition, cut, compatibility, expect warp num (before the subsubcommand!)
-                    [["name","n"],"name",False,"a",False],
-                    [["level width ","lvlwidth ","lvlw ","lw ","lw"],"lvlwidth",True,"1",False],
-                    [["level width","lvlwidth","lvlw"],"lvlwidth",False,"1",False],
-                    [["level background ","lvlbg ","lb ","lb"],"lvlbg",True,"1",False],
-                    [["level background","lvlbg"],"lvlbg",False,"1",False],
-                    [["level music ","lvlmus ","lm ","lm"],"lvlmus",True,"1",False],
-                    [["level music","lvlmus"],"lvlmus",False,"1",False],
-                    [["bonus width ","bnswidth ","bnsw ","bw ","bw"],"bnswidth",True,"1",False],
-                    [["bonus width","bnswidth","bnsw"],"bnswidth",False,"1",False],
-                    [["bonus background ","bnsbg ","bb ","bb"],"bnsbg",True,"1",False],
-                    [["bonus background","bnsbg"],"bnsbg",False,"1",False],
-                    [["bonus music ","bnsmus ","bm ","bm"]],"bnsmus",True,"1",False],
-                    [["bonus music","bnsmus","bnsmus",False,"1",False],
-                    [["start x ","startx ","sx ","sx"],"startx",True,"1",False],
-                    [["start x","startx"],"starty",False,"1",False],
-                    [["start y ","starty ","sy ","sy"],"startx",True,"1",False],
-                    [["start y","starty"],"starty",False,"1",False],
-                    [["start at ","startat ","sa ","sa"],"startat",True,"1",False],
-                    [["start at","startat"],"startat",False,"1",False],
-                    [["description ","desc ","d "],"desc",True,"2",False],
-                    [["description","desc","d"],"desc",False,"2",False],
-                    [["background ","bg ","b ","b"],"bg",True,"2",False],
-                    [["background","bg"],"bg",False,"2",False],
-                    [["music ","mus ","m ","m"],"mus",True,"2",False],
-                    [["music","mus"],"mus",False,"2",False],
-                    [["startstate ","powerup ","p ","p"],"powerup",True,"2",False],
-                    [["startstate","powerup"],"powerup",False,"2",False],
-                    [["url1 ","u1 "],"url1",True,"2",False],
-                    [["url1","u1"],"url1",False,"2",False],
-                    [["url2 ","u2 "],"url2",True,"2",False],
-                    [["url2","u2"],"url2",False,"2",False],
-                    [["layer priority 1 ","layerpri1 ","lpri 1 ","lp1 "],"layerpri1",True,"2",False],
-                    [["layer priority 1","layerpri1","lpri 1","lp1"],"layerpri1",False,"2",False],
-                    [["layer priority 2 ","layerpri2 ","lpri 2 ","lp2 "],"layerpri2",True,"2",False],
-                    [["layer priority 2","layerpri2","lpri 2","lp2"],"layerpri2",False,"2",False],
-                    [["layer2 xpos ","layer2 x ","layer2x ","l2x ","l2x"],"layer2x",True,"2",False],
-                    [["layer2 xpos","layer2 x","layer2x"],"layer2x",False,"2",False],
-                    [["layer2 ypos ","layer2 y ","layer2y ","l2y ","l2y"],"layer2y",True,"2",False],
-                    [["layer2 ypos","layer2 y","layer2y"],"layer2y",False,"2",False],
-                    [[""],"",False,"a",False],
+                    [["name ","n "],"name",True,"a"], #values, definition, cut, compatibility
+                    [["name","n"],"name",False,"a"],
+                    [["level width ","lvlwidth ","lvlw ","lw ","lw"],"lvlwidth",True,"1"],
+                    [["level width","lvlwidth","lvlw"],"lvlwidth",False,"1"],
+                    [["level background ","lvlbg ","lb ","lb"],"lvlbg",True,"1"],
+                    [["level background","lvlbg"],"lvlbg",False,"1"],
+                    [["level music ","lvlmus ","lm ","lm"],"lvlmus",True,"1"],
+                    [["level music","lvlmus"],"lvlmus",False,"1"],
+                    [["bonus width ","bnswidth ","bnsw ","bw ","bw"],"bnswidth",True,"1"],
+                    [["bonus width","bnswidth","bnsw"],"bnswidth",False,"1"],
+                    [["bonus background ","bnsbg ","bb ","bb"],"bnsbg",True,"1"],
+                    [["bonus background","bnsbg"],"bnsbg",False,"1"],
+                    [["bonus music ","bnsmus ","bm ","bm"]],"bnsmus",True,"1"],
+                    [["bonus music","bnsmus","bnsmus",False,"1"],
+                    [["start x ","startx ","sx ","sx"],"startx",True,"1"],
+                    [["start x","startx"],"starty",False,"1"],
+                    [["start y ","starty ","sy ","sy"],"startx",True,"1"],
+                    [["start y","starty"],"starty",False,"1"],
+                    [["start at ","startat ","sa ","sa"],"startat",True,"1"],
+                    [["start at","startat"],"startat",False,"1"],
+                    [["description ","desc ","d "],"desc",True,"2"],
+                    [["description","desc","d"],"desc",False,"2"],
+                    [["background ","bg ","b ","b"],"bg",True,"2"],
+                    [["background","bg"],"bg",False,"2"],
+                    [["music ","mus ","m ","m"],"mus",True,"2"],
+                    [["music","mus"],"mus",False,"2"],
+                    [["startstate ","powerup ","p ","p"],"powerup",True,"2"],
+                    [["startstate","powerup"],"powerup",False,"2"],
+                    [["url1 ","u1 "],"url1",True,"2"],
+                    [["url1","u1"],"url1",False,"2"],
+                    [["url2 ","u2 "],"url2",True,"2"],
+                    [["url2","u2"],"url2",False,"2"],
+                    [["layer priority 1 ","layerpri1 ","lpri 1 ","lp1 "],"layerpri1",True,"2"],
+                    [["layer priority 1","layerpri1","lpri 1","lp1"],"layerpri1",False,"2"],
+                    [["layer priority 2 ","layerpri2 ","lpri 2 ","lp2 "],"layerpri2",True,"2"],
+                    [["layer priority 2","layerpri2","lpri 2","lp2"],"layerpri2",False,"2"],
+                    [["layer2 xpos ","layer2 x ","layer2x ","l2x ","l2x"],"layer2x",True,"2"],
+                    [["layer2 xpos","layer2 x","layer2x"],"layer2x",False,"2"],
+                    [["layer2 ypos ","layer2 y ","layer2y ","l2y ","l2y"],"layer2y",True,"2"],
+                    [["layer2 ypos","layer2 y","layer2y"],"layer2y",False,"2"],
+                    [[""],"",False,"a"],
                 ]
             ],
             [["warps"],"warps",False],
             [["warp ","warp","w ","w"],"warps",True,
                 [
-                    [["level ","lvl ","l ","l"],"Level",True,"1",False],
-                    [["level","lvl"],"Level",False,"1",False],
-                    [["bonus ","bns ","b ","b"],"Bonus",True,"1",False],
-                    [["bonus","bns"],"Bonus",False,"1",False],
-                    [["add ","+ ","+"],"add",True,"1",False],
-                    [["add"],"add",False,"1",False],
-                    [["remove ","rem ","- ","-"],"remove",False,"1",True],
-                    [["remove","rem"],"remove",False,"1",True],
-                    [["xpos ","xpos","x ","x"],"xpos",True,"1",True],
-                    [["ypos ","ypos","y ","y"],"ypos",True,"1",True],
-                    [["sublevel ","sublvl ","s "],"sublvl",True,"1",True],
-                    [["sublevel","sublvl","s"],"sublvl",False,"1",True],
-                    [["xposto ","xposto","xt ","xt"],"xposto",True,"1",True],
-                    [["yposto ","yposto","yt ","yt"],"yposto",True,"1",True],
-                    [["direction ","dir ","d "],"dir",True,"1",True],
-                    [["direction","dir","d"],"dir",False,"1",True],
-                    [["animation ","anim ","type ","t "],"type",True,"1",True],
-                    [["animation","anim","type","t"],"type",False,"1",True],
+                    [["add ","+ ","+"],"add",True,"1s"], #smf expects sublevel type also! please keep note (s is for sublevel, w is for warp num)
+                    [["add"],"add",False,"1s"],
+                    [["remove ","rem ","- ","-"],"remove",False,"1sw"],
+                    [["remove","rem"],"remove",False,"1sw"],
+                    [["xpos ","xpos","x ","x"],"xpos",True,"1sw"],
+                    [["ypos ","ypos","y ","y"],"ypos",True,"1sw"],
+                    [["sublevel ","sublvl ","s "],"sublvl",True,"1sw"],
+                    [["sublevel","sublvl","s"],"sublvl",False,"1sw"],
+                    [["xposto ","xposto","xt ","xt"],"xposto",True,"1sw"],
+                    [["yposto ","yposto","yt ","yt"],"yposto",True,"1sw"],
+                    [["direction ","dir ","d "],"dir",True,"1sw"],
+                    [["direction","dir","d"],"dir",False,"1sw"],
+                    [["animation ","anim ","type ","t "],"type",True,"1sw"],
+                    [["animation","anim","type","t"],"type",False,"1sw"],
                 ]
             ],
             [["entrances"],"entrances",False],
             [["entrance ","entrance","entr ","entr","n ","n"],"entrances",True,
                 [
-                    
+                    [["add ","+ ","+"],"add",True,"2"],
+                    [["add"],"add",False,"2"],
+                    [["insert ","insert","i ","i"],"insert",True,"2"],
+                    [["remove","rem","-"],"remove",False,"2w"],
+                    [["swap ","swap","s ","s"],"swap",True,"2w"],
+                    [["xpos ","xpos","x ","x"],"xpos",True,"2w"],
+                    [["ypos ","ypos","y ","y"],"ypos",True,"2w"],
+                    [["state ","s ","s"],"state",True,"2w"],
+                    [["state"],"state",False,"2w"],
                 ]
             ],
             [["exits"],"exits",False],
             [["exit ","exit","x ","x"],"exits",True,
                 [
-                    
+                    [["add ","+ ","+"],"add",True,"2"],
+                    [["add"],"add",False,"2"],
+                    [["insert ","insert","i ","i"],"insert",True,"2"],
+                    [["remove","rem","-"],"remove",False,"2w"],
+                    [["swap ","swap","s ","s"],"swap",True,"2w"],
+                    [["xpos ","xpos","x ","x"],"xpos",True,"2w"],
+                    [["ypos ","ypos","y ","y"],"ypos",True,"2w"],
+                    [["linkto ","l ","l"],"linkto",True,"2w"],
+                    [["linkto"],"linkto",False,"2w"],
                 ]
             ],
             [["tiles ","tiles","t ","t"],"tiles",True,
                 [
-                    
+                    [[""],"",False,"a"],
                 ]
             ],
         ]
@@ -309,87 +322,98 @@ awaitInput_deabbreviator=[
             [["header","head"],"header",False],
             [["header ","head ","h ","h"],"header",True,
                 [
-                    [["name ","n "],"name",True,"a",False],
-                    [["name","n"],"name",False,"a",False],
-                    [["level width ","lvlwidth ","lvlw ","lw ","lw"],"lvlwidth",True,"1",False],
-                    [["level width","lvlwidth","lvlw"],"lvlwidth",False,"1",False],
-                    [["level background ","lvlbg ","lb ","lb"],"lvlbg",True,"1",False],
-                    [["level background","lvlbg"],"lvlbg",False,"1",False],
-                    [["level music ","lvlmus ","lm ","lm"],"lvlmus",True,"1",False],
-                    [["level music","lvlmus"],"lvlmus",False,"1",False],
-                    [["bonus width ","bnswidth ","bnsw ","bw ","bw"],"bnswidth",True,"1",False],
-                    [["bonus width","bnswidth","bnsw"],"bnswidth",False,"1",False],
-                    [["bonus background ","bnsbg ","bb ","bb"],"bnsbg",True,"1",False],
-                    [["bonus background","bnsbg"],"bnsbg",False,"1",False],
-                    [["bonus music ","bnsmus ","bm ","bm"]],"bnsmus",True,"1",False],
-                    [["bonus music","bnsmus","bnsmus",False,"1",False],
-                    [["start x ","startx ","sx ","sx"],"startx",True,"1",False],
-                    [["start x","startx"],"starty",False,"1",False],
-                    [["start y ","starty ","sy ","sy"],"startx",True,"1",False],
-                    [["start y","starty"],"starty",False,"1",False],
-                    [["start at ","startat ","sa ","sa"],"startat",True,"1",False],
-                    [["start at","startat"],"startat",False,"1",False],
-                    [["description ","desc ","d "],"desc",True,"2",False],
-                    [["description","desc","d"],"desc",False,"2",False],
-                    [["background ","bg ","b ","b"],"bg",True,"2",False],
-                    [["background","bg"],"bg",False,"2",False],
-                    [["music ","mus ","m ","m"],"mus",True,"2",False],
-                    [["music","mus"],"mus",False,"2",False],
-                    [["startstate ","powerup ","p ","p"],"powerup",True,"2",False],
-                    [["startstate","powerup"],"powerup",False,"2",False],
-                    [["url1 ","u1 "],"url1",True,"2",False],
-                    [["url1","u1"],"url1",False,"2",False],
-                    [["url2 ","u2 "],"url2",True,"2",False],
-                    [["url2","u2"],"url2",False,"2",False],
-                    [["layer priority 1 ","layerpri1 ","lpri 1 ","lp1 "],"layerpri1",True,"2",False],
-                    [["layer priority 1","layerpri1","lpri 1","lp1"],"layerpri1",False,"2",False],
-                    [["layer priority 2 ","layerpri2 ","lpri 2 ","lp2 "],"layerpri2",True,"2",False],
-                    [["layer priority 2","layerpri2","lpri 2","lp2"],"layerpri2",False,"2",False],
-                    [["layer2 xpos ","layer2 x ","layer2x ","l2x ","l2x"],"layer2x",True,"2",False],
-                    [["layer2 xpos","layer2 x","layer2x"],"layer2x",False,"2",False],
-                    [["layer2 ypos ","layer2 y ","layer2y ","l2y ","l2y"],"layer2y",True,"2",False],
-                    [["layer2 ypos","layer2 y","layer2y"],"layer2y",False,"2",False],
-                    [[""],"",False,"a",False],
+                    [["name ","n "],"name",True,"a"],
+                    [["name","n"],"name",False,"a"],
+                    [["level width ","lvlwidth ","lvlw ","lw ","lw"],"lvlwidth",True,"1"],
+                    [["level width","lvlwidth","lvlw"],"lvlwidth",False,"1"],
+                    [["level background ","lvlbg ","lb ","lb"],"lvlbg",True,"1"],
+                    [["level background","lvlbg"],"lvlbg",False,"1"],
+                    [["level music ","lvlmus ","lm ","lm"],"lvlmus",True,"1"],
+                    [["level music","lvlmus"],"lvlmus",False,"1"],
+                    [["bonus width ","bnswidth ","bnsw ","bw ","bw"],"bnswidth",True,"1"],
+                    [["bonus width","bnswidth","bnsw"],"bnswidth",False,"1"],
+                    [["bonus background ","bnsbg ","bb ","bb"],"bnsbg",True,"1"],
+                    [["bonus background","bnsbg"],"bnsbg",False,"1"],
+                    [["bonus music ","bnsmus ","bm ","bm"]],"bnsmus",True,"1"],
+                    [["bonus music","bnsmus","bnsmus",False,"1"],
+                    [["start x ","startx ","sx ","sx"],"startx",True,"1"],
+                    [["start x","startx"],"starty",False,"1"],
+                    [["start y ","starty ","sy ","sy"],"startx",True,"1"],
+                    [["start y","starty"],"starty",False,"1"],
+                    [["start at ","startat ","sa ","sa"],"startat",True,"1"],
+                    [["start at","startat"],"startat",False,"1"],
+                    [["description ","desc ","d "],"desc",True,"2"],
+                    [["description","desc","d"],"desc",False,"2"],
+                    [["background ","bg ","b ","b"],"bg",True,"2"],
+                    [["background","bg"],"bg",False,"2"],
+                    [["music ","mus ","m ","m"],"mus",True,"2"],
+                    [["music","mus"],"mus",False,"2"],
+                    [["startstate ","powerup ","p ","p"],"powerup",True,"2"],
+                    [["startstate","powerup"],"powerup",False,"2"],
+                    [["url1 ","u1 "],"url1",True,"2"],
+                    [["url1","u1"],"url1",False,"2"],
+                    [["url2 ","u2 "],"url2",True,"2"],
+                    [["url2","u2"],"url2",False,"2"],
+                    [["layer priority 1 ","layerpri1 ","lpri 1 ","lp1 "],"layerpri1",True,"2"],
+                    [["layer priority 1","layerpri1","lpri 1","lp1"],"layerpri1",False,"2"],
+                    [["layer priority 2 ","layerpri2 ","lpri 2 ","lp2 "],"layerpri2",True,"2"],
+                    [["layer priority 2","layerpri2","lpri 2","lp2"],"layerpri2",False,"2"],
+                    [["layer2 xpos ","layer2 x ","layer2x ","l2x ","l2x"],"layer2x",True,"2"],
+                    [["layer2 xpos","layer2 x","layer2x"],"layer2x",False,"2"],
+                    [["layer2 ypos ","layer2 y ","layer2y ","l2y ","l2y"],"layer2y",True,"2"],
+                    [["layer2 ypos","layer2 y","layer2y"],"layer2y",False,"2"],
+                    [[""],"",False,"a"],
                 ]
             ],
             [["warps"],"warps",False],
             [["warp ","warp","w ","w"],"warps",True,
                 [
-                    [["level ","lvl ","l ","l"],"Level",True,"1",False],
-                    [["level","lvl"],"Level",False,"1",False],
-                    [["bonus ","bns ","b ","b"],"Bonus",True,"1",False],
-                    [["bonus","bns"],"Bonus",False,"1",False],
-                    [["add ","+ ","+"],"add",True,"1",False],
-                    [["add"],"add",False,"1",False],
-                    [["remove ","rem ","- ","-"],"remove",False,"1",True],
-                    [["remove","rem"],"remove",False,"1",True],
-                    [["xpos ","xpos","x ","x"],"xpos",True,"1",True],
-                    [["ypos ","ypos","y ","y"],"ypos",True,"1",True],
-                    [["sublevel ","sublvl ","s "],"sublvl",True,"1",True],
-                    [["sublevel","sublvl","s"],"sublvl",False,"1",True],
-                    [["xposto ","xposto","xt ","xt"],"xposto",True,"1",True],
-                    [["yposto ","yposto","yt ","yt"],"yposto",True,"1",True],
-                    [["direction ","dir ","d "],"dir",True,"1",True],
-                    [["direction","dir","d"],"dir",False,"1",True],
-                    [["animation ","anim ","type ","t "],"type",True,"1",True],
-                    [["animation","anim","type","t"],"type",False,"1",True],
+                    [["add ","+ ","+"],"add",True,"1s"],
+                    [["add"],"add",False,"1s"],
+                    [["remove","rem","-"],"remove",False,"1sw"],
+                    [["xpos ","xpos","x ","x"],"xpos",True,"1sw"],
+                    [["ypos ","ypos","y ","y"],"ypos",True,"1sw"],
+                    [["sublevel ","sublvl ","s "],"sublvl",True,"1sw"],
+                    [["sublevel","sublvl","s"],"sublvl",False,"1sw"],
+                    [["xposto ","xposto","xt ","xt"],"xposto",True,"1sw"],
+                    [["yposto ","yposto","yt ","yt"],"yposto",True,"1sw"],
+                    [["direction ","dir ","d "],"dir",True,"1sw"],
+                    [["direction","dir","d"],"dir",False,"1sw"],
+                    [["animation ","anim ","type ","t "],"type",True,"1sw"],
+                    [["animation","anim","type","t"],"type",False,"1sw"],
                 ]
             ],
             [["entrances"],"entrances",False],
             [["entrance ","entrance","entr ","entr","n ","n"],"entrances",True,
                 [
-                    
+                    [["add ","+ ","+"],"add",True,"2"],
+                    [["add"],"add",False,"2"],
+                    [["insert ","insert","i ","i"],"insert",True,"2"],
+                    [["remove","rem","-"],"remove",False,"2w"],
+                    [["swap ","swap","s ","s"],"swap",True,"2w"],
+                    [["xpos ","xpos","x ","x"],"xpos",True,"2w"],
+                    [["ypos ","ypos","y ","y"],"ypos",True,"2w"],
+                    [["state ","s ","s"],"state",True,"2w"],
+                    [["state"],"state",False,"2w"],
                 ]
             ],
             [["exits"],"exits",False],
             [["exit ","exit","x ","x"],"exits",True,
                 [
-                    
+                    [["add ","+ ","+"],"add",True,"2"],
+                    [["add"],"add",False,"2"],
+                    [["insert ","insert","i ","i"],"insert",True,"2"],
+                    [["remove","rem","-"],"remove",False,"2w"],
+                    [["swap ","swap","s ","s"],"swap",True,"2w"],
+                    [["xpos ","xpos","x ","x"],"xpos",True,"2w"],
+                    [["ypos ","ypos","y ","y"],"ypos",True,"2w"],
+                    [["linkto ","l ","l"],"linkto",True,"2w"],
+                    [["linkto"],"linkto",False,"2w"],
                 ]
             ],
             [["tiles ","tiles","t ","t"],"tiles",True,
                 [
-                    
+                    [[""],"",False,"a"],
                 ]
             ],
         ]
@@ -426,7 +450,7 @@ def testInputMatch(command, toExecute):
                                 #print(k[0][l])
                                 #print(command[len(i[0][j]):len(i[0][j])+len(k[0][l])],"compared to",k[0][l])
                                 if i[4]: #subsubcommands allowed?
-                                    if k[2]: #cropped match
+                                    if k[2]: #cropped match -------------------------------------------------- add cycle through all subsubcommands for validity!
                                         if command[len(i[0][j]):len(i[0][j])+len(k[0][l])]==k[0][l]:
                                             if toExecute:
                                                 awaitInput_commands[i[1]](k[1],command[len(i[0][j])+len(k[0][l]):])
@@ -437,12 +461,12 @@ def testInputMatch(command, toExecute):
                                                 awaitInput_commands[i[1]](k[1],command[len(i[0][j])+len(k[0][l]):])
                                             return True,i[0][j],True,True,command[len(i[0][j]):len(i[0][j])+len(k[0][l])],True,command[len(i[0][j])+len(k[0][l]):]
                                 else: #subsubcommand is a value
-                                    if k[2]: #cropped match
+                                    if k[2]: #cropped match ("export txt ")
                                         if command[len(i[0][j]):len(i[0][j])+len(k[0][l])]==k[0][l]:
                                             if toExecute:
                                                 awaitInput_commands[i[1]](k[1],command[len(i[0][j])+len(k[0][l]):])
                                             return True,i[0][j],True,True,command[len(i[0][j]):len(i[0][j])+len(k[0][l])],False,command[len(i[0][j])+len(k[0][l]):]
-                                    else: #explicit match
+                                    else: #explicit match ("export txt")
                                         if command[len(i[0][j]):]==k[0][l]:
                                             if toExecute:
                                                 awaitInput_commands[i[1]](k[1],command[len(i[0][j])+len(k[0][l]):])
@@ -698,10 +722,10 @@ def generalHelp(command):
         print("\nType in "+colorScheme["command"]+"help"+colorScheme["default"]+" "+colorScheme["bold"]+"[command]"+colorScheme["default"]+" | "+colorScheme["command"]+"?"+colorScheme["default"]+" "+colorScheme["bold"]+"[command]"+colorScheme["default"]+" to learn more about how each command works.")
     elif command=="open":
         print(colorScheme["bold"]+"Open Command"+colorScheme["default"])
-        print("This command opens up a File Explorer dialogue and allows you to select a file. This file is then automatically parsed and can be edited.")
+        print("This command opens up a File Explorer dialogue and allows you to select a file (if the file is not specified). This file is then automatically parsed and can be edited.")
         print("\n"+colorScheme["bold"]+"Syntax"+colorScheme["default"])
-        print(colorScheme["command"]+"open"+colorScheme["default"])
-        print(colorScheme["command"]+"o"+colorScheme["default"])
+        print(colorScheme["command"]+"open "+colorScheme["value"]+"[path]"+colorScheme["default"])
+        print(colorScheme["command"]+"o "+colorScheme["value"]+"[path]"+colorScheme["default"])
     elif command=="export":
         print(colorScheme["bold"]+"Export Command"+colorScheme["default"])
         print("This command exports an opened Super Mario Flash level to your desired format, such as Comma Separated Values (can be edited in Excel), the original SMF text format, or an experimental text format that contains a visual representation of level tiles.")

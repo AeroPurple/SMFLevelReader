@@ -227,8 +227,8 @@ awaitInput_deabbreviator=[
                     [["bonus width","bnswidth","bnsw"],"bnswidth",False,"1"],
                     [["bonus background ","bnsbg ","bb ","bb"],"bnsbg",True,"1"],
                     [["bonus background","bnsbg"],"bnsbg",False,"1"],
-                    [["bonus music ","bnsmus ","bm ","bm"]],"bnsmus",True,"1"],
-                    [["bonus music","bnsmus","bnsmus",False,"1"],
+                    [["bonus music ","bnsmus ","bm ","bm"],"bnsmus",True,"1"],
+                    [["bonus music","bnsmus"],"bnsmus",False,"1"],
                     [["start x ","startx ","sx ","sx"],"startx",True,"1"],
                     [["start x","startx"],"starty",False,"1"],
                     [["start y ","starty ","sy ","sy"],"startx",True,"1"],
@@ -334,8 +334,8 @@ awaitInput_deabbreviator=[
                     [["bonus width","bnswidth","bnsw"],"bnswidth",False,"1"],
                     [["bonus background ","bnsbg ","bb ","bb"],"bnsbg",True,"1"],
                     [["bonus background","bnsbg"],"bnsbg",False,"1"],
-                    [["bonus music ","bnsmus ","bm ","bm"]],"bnsmus",True,"1"],
-                    [["bonus music","bnsmus","bnsmus",False,"1"],
+                    [["bonus music ","bnsmus ","bm ","bm"],"bnsmus",True,"1"],
+                    [["bonus music","bnsmus","bnsmus"],False,"1"],
                     [["start x ","startx ","sx ","sx"],"startx",True,"1"],
                     [["start x","startx"],"starty",False,"1"],
                     [["start y ","starty ","sy ","sy"],"startx",True,"1"],
@@ -447,14 +447,20 @@ def testInputMatch(command, toExecute):
                     if i[3]: # if more commands are allowed
                         for k in i[5]: # iterate through subcommands
                             for l in range(len(k[0])): # iterate through versions
-                                #print(k[0][l])
-                                #print(command[len(i[0][j]):len(i[0][j])+len(k[0][l])],"compared to",k[0][l])
                                 if i[4]: #subsubcommands allowed?
                                     if k[2]: #cropped match -------------------------------------------------- add cycle through all subsubcommands for validity!
-                                        if command[len(i[0][j]):len(i[0][j])+len(k[0][l])]==k[0][l]:
-                                            if toExecute:
-                                                awaitInput_commands[i[1]](k[1],command[len(i[0][j])+len(k[0][l]):])
-                                            return True,i[0][j],True,True,command[len(i[0][j]):len(i[0][j])+len(k[0][l])],True,command[len(i[0][j])+len(k[0][l]):]
+                                        for m in k[3]:
+                                            for n in range(len(m[0])):
+                                                if m[2]: #cropped match
+                                                    if command[len(i[0][j])+len(k[0][l]):len(k[0][l])+len(m[0][n])+1]==m[0][n]: # --implement warp numbers!
+                                                        pass
+                                                else: #explicit match
+                                                    if command[len(i[0][j])+len(k[0][l]):]==m[0][n]: # --implement warp numbers?
+                                                        pass
+                                        #    if command[len(i[0][j]):len(i[0][j])+len(k[0][l])]==k[0][l]:
+                                        #       if toExecute:
+                                        #            awaitInput_commands[i[1]](k[1],command[len(i[0][j])+len(k[0][l]):])
+                                        #        return True,i[0][j],True,True,command[len(i[0][j]):len(i[0][j])+len(k[0][l])],True,command[len(i[0][j])+len(k[0][l]):]
                                     else: #explicit match
                                         if command[len(i[0][j]):]==k[0][l]:
                                             if toExecute:

@@ -418,7 +418,7 @@ awaitInput_deabbreviator=[
             ],
         ]
     ],
-    [["header","h"],"header",False],
+    [["header","head","h"],"header",False],
     [["help ","? ","?"],"help",True,True,False,
         [
             [[""],"",False],
@@ -442,52 +442,78 @@ awaitInput_deabbreviator=[
 def testInputMatch(command, toExecute):
     for i in awaitInput_deabbreviator: # iterates through all entries of awaitInput_deabbreviator
         for j in range(len(i[0])): # iterates through all command versions (e.g. i[0])
-            if i[2]: # check if the first boolean placed in each entry is true or false
-                if command[:len(i[0][j])]==i[0][j]: # if typed command cut to length of command version matches
+            command1=command.partition(i[0][j])
+            if command1[1]==i[0][j] and command1[0]=="":
+                if i[2]: # check if the first boolean placed in each entry is true or false
                     if i[3]: # if more commands are allowed
-                        for k in i[5]: # iterate through subcommands
-                            for l in range(len(k[0])): # iterate through versions
-                                if i[4]: #subsubcommands allowed?
-                                    if k[2]: #cropped match -------------------------------------------------- add cycle through all subsubcommands for validity!
-                                        for m in k[3]:
-                                            for n in range(len(m[0])):
-                                                if m[2]: #cropped match
-                                                    if command[len(i[0][j])+len(k[0][l]):len(k[0][l])+len(m[0][n])+1]==m[0][n]: # --implement warp numbers!
-                                                        pass
-                                                else: #explicit match
-                                                    if command[len(i[0][j])+len(k[0][l]):]==m[0][n]: # --implement warp numbers?
-                                                        pass
-                                        #    if command[len(i[0][j]):len(i[0][j])+len(k[0][l])]==k[0][l]:
-                                        #       if toExecute:
-                                        #            awaitInput_commands[i[1]](k[1],command[len(i[0][j])+len(k[0][l]):])
-                                        #        return True,i[0][j],True,True,command[len(i[0][j]):len(i[0][j])+len(k[0][l])],True,command[len(i[0][j])+len(k[0][l]):]
-                                    else: #explicit match
-                                        if command[len(i[0][j]):]==k[0][l]:
-                                            if toExecute:
-                                                awaitInput_commands[i[1]](k[1],command[len(i[0][j])+len(k[0][l]):])
-                                            return True,i[0][j],True,True,command[len(i[0][j]):len(i[0][j])+len(k[0][l])],True,command[len(i[0][j])+len(k[0][l]):]
-                                else: #subsubcommand is a value
-                                    if k[2]: #cropped match ("export txt ")
-                                        if command[len(i[0][j]):len(i[0][j])+len(k[0][l])]==k[0][l]:
-                                            if toExecute:
-                                                awaitInput_commands[i[1]](k[1],command[len(i[0][j])+len(k[0][l]):])
-                                            return True,i[0][j],True,True,command[len(i[0][j]):len(i[0][j])+len(k[0][l])],False,command[len(i[0][j])+len(k[0][l]):]
-                                    else: #explicit match ("export txt")
-                                        if command[len(i[0][j]):]==k[0][l]:
-                                            if toExecute:
-                                                awaitInput_commands[i[1]](k[1],command[len(i[0][j])+len(k[0][l]):])
-                                            return True,i[0][j],True,True,command[len(i[0][j]):len(i[0][j])+len(k[0][l])],False,command[len(i[0][j])+len(k[0][l]):]
-                        return True,i[0][j],True,False,command[len(i[0][j]):] #matched/not, command, has subcommand, matched/not subcommand, subcommand
+                        print(command1)
+                        pass
                     else:
                         if toExecute:
                             awaitInput_commands[i[1]](command[len(i[0][j]):]) # execute from command library with args
                         return True,i[0][j],False,command[len(i[0][j]):] # matched/not, command, is next part a command, argument
-            else:
-                if command==i[0][j]: # if typed command EXPLICITLY matches with command version, highlight
+                elif command1[2]=="": # if typed command EXPLICITLY matches with command version, highlight
+                    print(command1[1]+"=="+i[0][j]+"!")
                     if toExecute:
                         awaitInput_commands[i[1]]("") # execute from command library with args
                     return True,i[0][j],False,"" # matched/not, command, is next part a command, dummy argument
     return False,command # matched/not, command
+    
+    # for i in awaitInput_deabbreviator: # iterates through all entries of awaitInput_deabbreviator
+        # for j in range(len(i[0])): # iterates through all command versions (e.g. i[0])
+            # if i[2]: # check if the first boolean placed in each entry is true or false
+                # if command[:len(i[0][j])]==i[0][j]: # if typed command cut to length of command version matches
+                    # if i[3]: # if more commands are allowed
+                        # for k in i[5]: # iterate through subcommands
+                            # for l in range(len(k[0])): # iterate through versions
+                                # if i[4]: #subsubcommands allowed?
+                                    # if k[2]: #cropped match -------------------------------------------------- add cycle through all subsubcommands for validity!
+                                        # if command[len(i[0][j]):len(i[0][j])+len(k[0][l])]==k[0][l]:
+                                            # for m in k[3]:
+                                                # for n in range(len(m[0])): # -------------- incomplete: "rnst" is valid while "rw" isn't...
+                                                    # if m[2]: #cropped match
+                                                        # print(colorScheme["id"]+"Comparing to: "+i[0][j]+k[0][l]+m[0][n])
+                                                        # print(command[len(i[0][j])+len(k[0][l]):]+"=="+m[0][n]+": "+str(command[len(i[0][j])+len(k[0][l]):]==m[0][n])+colorScheme["default"])
+                                                        # if command[len(i[0][j])+len(k[0][l]):len(k[0][l])+len(m[0][n])+1]==m[0][n]: # --implement warp numbers!
+                                                            # #print(colorScheme["id"]+"\nCropped match: "+i[0][j],k[0][l],m[0][n]+colorScheme["default"])
+                                                            # return True,i[0][j],True,True,command[len(i[0][j]):len(i[0][j])+len(k[0][l])],True,command[len(i[0][j])+len(k[0][l]):]
+                                                    # else: #explicit match
+                                                        # print(colorScheme["id"]+"Comparing to: "+i[0][j]+k[0][l]+m[0][n])
+                                                        # print(command[len(i[0][j])+len(k[0][l]):]+"=="+m[0][n]+": "+str(command[len(i[0][j])+len(k[0][l]):]==m[0][n])+colorScheme["default"])
+                                                        # if command[len(i[0][j])+len(k[0][l]):]==m[0][n]: # --implement warp numbers?
+                                                            # print(colorScheme["error"]+"\nExplicit match: "+i[0][j]+k[0][l]+m[0][n]+colorScheme["default"])
+                                                            # return True,i[0][j],True,True,command[len(i[0][j]):len(i[0][j])+len(k[0][l])],True,command[len(i[0][j])+len(k[0][l]):]
+                                        # #    if command[len(i[0][j]):len(i[0][j])+len(k[0][l])]==k[0][l]:
+                                        # #       if toExecute:
+                                        # #            awaitInput_commands[i[1]](k[1],command[len(i[0][j])+len(k[0][l]):])
+                                        # #        return True,i[0][j],True,True,command[len(i[0][j]):len(i[0][j])+len(k[0][l])],True,command[len(i[0][j])+len(k[0][l]):]
+                                    # else: #explicit match
+                                        # if command[len(i[0][j]):]==k[0][l]:
+                                            # if toExecute:
+                                                # awaitInput_commands[i[1]](k[1],command[len(i[0][j])+len(k[0][l]):])
+                                            # return True,i[0][j],True,True,command[len(i[0][j]):len(i[0][j])+len(k[0][l])],True,command[len(i[0][j])+len(k[0][l]):]
+                                # else: #subsubcommand is a value
+                                    # if k[2]: #cropped match ("export txt ")
+                                        # if command[len(i[0][j]):len(i[0][j])+len(k[0][l])]==k[0][l]:
+                                            # if toExecute:
+                                                # awaitInput_commands[i[1]](k[1],command[len(i[0][j])+len(k[0][l]):])
+                                            # return True,i[0][j],True,True,command[len(i[0][j]):len(i[0][j])+len(k[0][l])],False,command[len(i[0][j])+len(k[0][l]):]
+                                    # else: #explicit match ("export txt")
+                                        # if command[len(i[0][j]):]==k[0][l]:
+                                            # if toExecute:
+                                                # awaitInput_commands[i[1]](k[1],command[len(i[0][j])+len(k[0][l]):])
+                                            # return True,i[0][j],True,True,command[len(i[0][j]):len(i[0][j])+len(k[0][l])],False,command[len(i[0][j])+len(k[0][l]):]
+                        # return True,i[0][j],True,False,command[len(i[0][j]):] #matched/not, command, has subcommand, matched/not subcommand, subcommand
+                    # else:
+                        # if toExecute:
+                            # awaitInput_commands[i[1]](command[len(i[0][j]):]) # execute from command library with args
+                        # return True,i[0][j],False,command[len(i[0][j]):] # matched/not, command, is next part a command, argument
+            # else:
+                # if command==i[0][j]: # if typed command EXPLICITLY matches with command version, highlight
+                    # if toExecute:
+                        # awaitInput_commands[i[1]]("") # execute from command library with args
+                    # return True,i[0][j],False,"" # matched/not, command, is next part a command, dummy argument
+    # return False,command # matched/not, command
         
 def input(prefaceString, failSafeCommand):
     global current_command

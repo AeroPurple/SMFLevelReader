@@ -175,11 +175,7 @@ awaitInput_deabbreviator=[
         ]
     ],
     [["exit","x"],"exit",True,False],
-    [["export","exp","e"],"export",True,True,False,
-        [
-            [[""],"",False]
-        ]
-    ],
+    [["export","exp","e"],"export",False],
     [["import ","imp ","i "],"import",True,True,False,
         [
             [["level ","lvl ","l "],"lvl",True],
@@ -192,11 +188,7 @@ awaitInput_deabbreviator=[
             [["layer 2","layer2","l2"],"l2",False]
         ]
     ],
-    [["import","imp"],"import",True,True,False,
-        [
-            [[""],"",False]
-        ]
-    ],
+    [["import","imp"],"import",False],
     [["i"],"import",True,True,False,
         [
             [["level ","lvl ","l "],"lvl",True],
@@ -312,11 +304,7 @@ awaitInput_deabbreviator=[
             ],
         ]
     ],
-    [["replace","rep"],"replace",True,True,False,
-        [
-            [[""],"",False]
-        ]
-    ],
+    [["replace","rep"],"replace",False],
     [["r"],"replace",True,True,True,
         [
             [["header","head"],"header",False],
@@ -432,11 +420,7 @@ awaitInput_deabbreviator=[
             [["exit","x"],"exit",False]
         ]
     ],
-    [["help"],"help",True,True,False,
-        [
-            [[""],"",False]
-        ]
-    ],
+    [["help"],"help",False],
 ]
 
 def testInputMatch(command, toExecute):
@@ -446,14 +430,28 @@ def testInputMatch(command, toExecute):
             if command1[1]==i[0][j] and command1[0]=="":
                 if i[2]: # check if the first boolean placed in each entry is true or false
                     if i[3]: # if more commands are allowed
-                        print(command1)
-                        pass
+                        #print(command1)
+                        for k in i[5]: # iterate through subcommands
+                            #print(k)
+                            for l in range(len(k[0])): # iterate through versions
+                                subcommand=command1[2].partition(k[0][l])
+                                print(subcommand)
+                                if i[4]: #subsubcommands allowed?
+                                    pass
+                                else: #subsubcommand is a value
+                                    if k[2]: #cropped match ("export txt ")
+                                        pass
+                                    else: #explicit match ("export txt")
+                                        if subcommand[1]==k[0][l]:
+                                            if toExecute:
+                                                awaitInput_commands[i[1]](k[1],subcommand[1])
+                                            return True,i[0][j],True,True,subcommand[1],False,command[len(i[0][j])+len(k[0][l]):]
+                        return True,i[0][j],True,False,command[len(i[0][j]):] #matched/not, command, has subcommand, matched/not subcommand, subcommand
                     else:
                         if toExecute:
                             awaitInput_commands[i[1]](command[len(i[0][j]):]) # execute from command library with args
                         return True,i[0][j],False,command[len(i[0][j]):] # matched/not, command, is next part a command, argument
                 elif command1[2]=="": # if typed command EXPLICITLY matches with command version, highlight
-                    print(command1[1]+"=="+i[0][j]+"!")
                     if toExecute:
                         awaitInput_commands[i[1]]("") # execute from command library with args
                     return True,i[0][j],False,"" # matched/not, command, is next part a command, dummy argument

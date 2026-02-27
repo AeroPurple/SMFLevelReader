@@ -153,7 +153,7 @@ awaitInput_commands={
     "open": lambda arg: processFile(arg),
     "export": lambda arg, value: exportAll(arg, value),
     "import": lambda arg, value: importTiles(arg, value),
-    "settings": lambda dummy: changeConfig(),
+    "settings": lambda arg, value: changeConfig(arg, value),
     "replace": lambda arg1, arg2: replace(arg1, arg2, arg3),
     "header": lambda arg: printInfo(),
     "help": lambda arg, dummy: generalHelp(arg),
@@ -201,7 +201,13 @@ awaitInput_deabbreviator=[
             [["layer 2","layer2","l2"],"l2",False]
         ]
     ],
-    [["settings","set","s"],"settings",False],
+    [["settings ","set ","s ","s"],"settings",True,True,False,
+        [
+            [["waittime ","wait ","delay ","w ","w"],"wait",True],
+            [["waittime","wait","delay"],"wait",False]
+        ]
+    ],
+    [["settings","set"],"settings",False],
     [["replace ","rep ","r "],"replace",True,True,True,
         [
             [["header","head"],"header",False],
@@ -669,116 +675,123 @@ def configLoad():
         except:
             configSave(programVersion,62,2,1)
         
-def changeConfig():
+def changeConfig(setting, value):
     configLoad()
     
     global titleScreenWaitTime
     global decorType
     global useANSI
     
-    try:
-        console=curses.initscr()
-    except:
-        print(strlib["err_curses_load"])
-        return
-    curses.noecho()
-    curses.cbreak()
-    console.keypad(True)
-    console.clear()
-    if decorType!=0:
-        console.addstr(0,0,f" {strlib['title_s']} ".center(screenx,decorTypes[decorType]))
+    if setting!="":
+        if setting=="wait":
+            titleScreenWaitTime=int(value)&255
+            print(titleScreenWaitTime)
+        # --------------------- more options
+        configSave(programVersion,titleScreenWaitTime,decorType,useANSI)
     else:
-        console.addstr(0,0,strlib["title_s"])
-    if configVersion+1>len(versionNames):
-        console.addstr(1,0,f"{strlib['conf_ver_title']}{strlib['conf_ver_hi']}[{configVersion}]")
-    elif versionNames[configVersion]==0:
-        console.addstr(1,0,f"{strlib['conf_ver_title']}{strlib['conf_ver_inv']}[{configVersion}]")
-    else:
-        console.addstr(1,0,f"{strlib['conf_ver_title']}"+versionNames[configVersion])
-    console.addstr(2,0,f"{strlib['opt_conf_title_ms']}◄    ►")
-    console.addstr(3,0,f"{strlib['opt_conf_title_pad']}◄    ►")
-    console.addstr(4,0,f"{strlib['opt_conf_ansi']}◄   ►")
-    console.addstr(6,0,f"[{strlib['opt_btn_reset']}]")
-    console.addstr(7,0,f"[{strlib['opt_btn_cancel']}]")
-    console.addstr(8,0,f"[{strlib['opt_btn_save']}]")
-    current_item=0
-    old_data=[titleScreenWaitTime,decorType,useANSI]
-    temp_new=0
-    while True:
-        console.addstr(2,25,str(titleScreenWaitTime*16).rjust(4))
-        if decorType==0:
-            console.addstr(3,22,strlib["gen_none"])
+        try:
+            console=curses.initscr()
+        except:
+            print(strlib["err_curses_load"])
+            return
+        curses.noecho()
+        curses.cbreak()
+        console.keypad(True)
+        console.clear()
+        if decorType!=0:
+            console.addstr(0,0,f" {strlib['title_s']} ".center(screenx,decorTypes[decorType]))
         else:
-            console.addstr(3,22,"".center(4,decorTypes[decorType]))
-        if useANSI==0:
-            console.addstr(4,24,strlib["gen_no"].rjust(3))
-        elif useANSI==1:
-            console.addstr(4,24,strlib["gen_yes"].rjust(3))
-        console.addstr(6,1,strlib["opt_btn_reset"])
-        console.addstr(7,1,strlib["opt_btn_cancel"])
-        console.addstr(8,1,strlib["opt_btn_save"])
-        if current_item==0:
-            console.addstr(2,25,str(titleScreenWaitTime*16).rjust(4),curses.A_REVERSE)
-        elif current_item==1:
+            console.addstr(0,0,strlib["title_s"])
+        if configVersion+1>len(versionNames):
+            console.addstr(1,0,f"{strlib['conf_ver_title']}{strlib['conf_ver_hi']}[{configVersion}]")
+        elif versionNames[configVersion]==0:
+            console.addstr(1,0,f"{strlib['conf_ver_title']}{strlib['conf_ver_inv']}[{configVersion}]")
+        else:
+            console.addstr(1,0,f"{strlib['conf_ver_title']}"+versionNames[configVersion])
+        console.addstr(2,0,f"{strlib['opt_conf_title_ms']}◄    ►")
+        console.addstr(3,0,f"{strlib['opt_conf_title_pad']}◄    ►")
+        console.addstr(4,0,f"{strlib['opt_conf_ansi']}◄   ►")
+        console.addstr(6,0,f"[{strlib['opt_btn_reset']}]")
+        console.addstr(7,0,f"[{strlib['opt_btn_cancel']}]")
+        console.addstr(8,0,f"[{strlib['opt_btn_save']}]")
+        current_item=0
+        old_data=[titleScreenWaitTime,decorType,useANSI]
+        temp_new=0
+        while True:
+            console.addstr(2,25,str(titleScreenWaitTime*16).rjust(4))
             if decorType==0:
-                console.addstr(3,22,strlib["gen_none"],curses.A_REVERSE)
+                console.addstr(3,22,strlib["gen_none"])
             else:
-                console.addstr(3,22,"".center(4,decorTypes[decorType]),curses.A_REVERSE)
-        elif current_item==2:          
+                console.addstr(3,22,"".center(4,decorTypes[decorType]))
             if useANSI==0:
-                console.addstr(4,24,strlib["gen_no"].rjust(3),curses.A_REVERSE)
+                console.addstr(4,24,strlib["gen_no"].rjust(3))
             elif useANSI==1:
-                console.addstr(4,24,strlib["gen_yes"].rjust(3),curses.A_REVERSE)
-        elif current_item==3:
-            console.addstr(6,1,strlib["opt_btn_reset"],curses.A_REVERSE)
-        elif current_item==4:
-            console.addstr(7,1,strlib["opt_btn_cancel"],curses.A_REVERSE)
-        elif current_item==5:
-            console.addstr(8,1,strlib["opt_btn_save"],curses.A_REVERSE)
-        console.refresh()
-        key=console.getch()
-        #console.addstr(11,0,str(key)+"   ")
-        console.refresh()
-        if key==10: # Enter
-            if current_item<3:
+                console.addstr(4,24,strlib["gen_yes"].rjust(3))
+            console.addstr(6,1,strlib["opt_btn_reset"])
+            console.addstr(7,1,strlib["opt_btn_cancel"])
+            console.addstr(8,1,strlib["opt_btn_save"])
+            if current_item==0:
+                console.addstr(2,25,str(titleScreenWaitTime*16).rjust(4),curses.A_REVERSE)
+            elif current_item==1:
+                if decorType==0:
+                    console.addstr(3,22,strlib["gen_none"],curses.A_REVERSE)
+                else:
+                    console.addstr(3,22,"".center(4,decorTypes[decorType]),curses.A_REVERSE)
+            elif current_item==2:          
+                if useANSI==0:
+                    console.addstr(4,24,strlib["gen_no"].rjust(3),curses.A_REVERSE)
+                elif useANSI==1:
+                    console.addstr(4,24,strlib["gen_yes"].rjust(3),curses.A_REVERSE)
+            elif current_item==3:
+                console.addstr(6,1,strlib["opt_btn_reset"],curses.A_REVERSE)
+            elif current_item==4:
+                console.addstr(7,1,strlib["opt_btn_cancel"],curses.A_REVERSE)
+            elif current_item==5:
+                console.addstr(8,1,strlib["opt_btn_save"],curses.A_REVERSE)
+            console.refresh()
+            key=console.getch()
+            #console.addstr(11,0,str(key)+"   ")
+            console.refresh()
+            if key==10: # Enter
+                if current_item<3:
+                    current_item=(current_item+1)%6
+                else:
+                    if current_item==3:
+                        titleScreenWaitTime,decorType,useANSI=[62,2,1]
+                        configSave(programVersion,titleScreenWaitTime,decorType,useANSI)
+                    elif current_item==4:
+                        titleScreenWaitTime,decorType,useANSI=old_data
+                    elif current_item==5:
+                        configSave(programVersion,titleScreenWaitTime,decorType,useANSI)
+                    try:
+                        colorscheme.defineColors()
+                    except:
+                        pass
+                    curses.endwin()
+                    print(strlib["exit_s"])
+                    return
+            elif key==curses.KEY_DOWN:
                 current_item=(current_item+1)%6
-            else:
-                if current_item==3:
-                    titleScreenWaitTime,decorType,useANSI=[62,2,1]
-                    configSave(programVersion,titleScreenWaitTime,decorType,useANSI)
-                elif current_item==4:
-                    titleScreenWaitTime,decorType,useANSI=old_data
-                elif current_item==5:
-                    configSave(programVersion,titleScreenWaitTime,decorType,useANSI)
-                try:
-                    colorscheme.defineColors()
-                except:
-                    pass
-                curses.endwin()
-                print(strlib["exit_s"])
-                return
-        elif key==curses.KEY_DOWN:
-            current_item=(current_item+1)%6
-        elif key==curses.KEY_UP:
-            current_item=(current_item-1)%6
-        elif key==curses.KEY_LEFT:
-            if current_item==0:
-                if titleScreenWaitTime>0:
-                    titleScreenWaitTime-=1
-            elif current_item==1:
-                if decorType>0:
-                    decorType-=1
-            elif current_item==2:
-                useANSI=(useANSI-1)%2
-        elif key==curses.KEY_RIGHT:
-            if current_item==0:
-                if titleScreenWaitTime<255:
-                    titleScreenWaitTime+=1
-            elif current_item==1:
-                if decorType<3:
-                    decorType+=1
-            elif current_item==2:
-                useANSI=(useANSI+1)%2
+            elif key==curses.KEY_UP:
+                current_item=(current_item-1)%6
+            elif key==curses.KEY_LEFT:
+                if current_item==0:
+                    if titleScreenWaitTime>0:
+                        titleScreenWaitTime-=1
+                elif current_item==1:
+                    if decorType>0:
+                        decorType-=1
+                elif current_item==2:
+                    useANSI=(useANSI-1)%2
+            elif key==curses.KEY_RIGHT:
+                if current_item==0:
+                    if titleScreenWaitTime<255:
+                        titleScreenWaitTime+=1
+                elif current_item==1:
+                    if decorType<3:
+                        decorType+=1
+                elif current_item==2:
+                    useANSI=(useANSI+1)%2
 
 def generalHelp(command):
     if command=="":

@@ -154,7 +154,7 @@ awaitInput_commands={
     "export": lambda arg, value: exportAll(arg, value),
     "import": lambda arg, value: importTiles(arg, value),
     "settings": lambda dummy: changeConfig(),
-    "replace": lambda arg1, arg2: replace(arg1, arg2),
+    "replace": lambda arg1, arg2: replace(arg1, arg2, arg3),
     "header": lambda arg: printInfo(),
     "help": lambda arg, dummy: generalHelp(arg),
     "exit": lambda dummy: (clear(),exit(0))[1],
@@ -323,7 +323,7 @@ awaitInput_deabbreviator=[
                     [["bonus background ","bnsbg ","bb ","bb"],"bnsbg",True,"1"],
                     [["bonus background","bnsbg"],"bnsbg",False,"1"],
                     [["bonus music ","bnsmus ","bm ","bm"],"bnsmus",True,"1"],
-                    [["bonus music","bnsmus","bnsmus"],False,"1"],
+                    [["bonus music","bnsmus","bnsmus"],"bnsmus",False,"1"],
                     [["start x ","startx ","sx ","sx"],"startx",True,"1"],
                     [["start x","startx"],"starty",False,"1"],
                     [["start y ","starty ","sy ","sy"],"startx",True,"1"],
@@ -440,17 +440,40 @@ def testInputMatch(command, toExecute):
                                     subcommand=("", "", "")
                                 #print(subcommand)
                                 if i[4]: #subsubcommands allowed?
-                                    pass
+                                    if k[2]: #cropped match ("replace tiles ")
+                                        if subcommand[1]==k[0][l] and subcommand[0]=="":
+                                            for m in k[3]:
+                                                for n in range(len(m[0])):
+                                                    #print(m[0][n],m[2])
+                                                    if "w" in m[3]: #needs warp ID first
+                                                        pass
+                                                    else: #no checking for versions yet!!! the replace method still is in charge of this
+                                                        if m[0][n]!="":
+                                                            subsubcommand=subcommand[2].partition(m[0][n])
+                                                        else:
+                                                            subsubcommand=("", "", "")
+                                                        #print(subsubcommand)
+                                                        if m[2]: #values allowed?
+                                                            if subsubcommand[1]==m[0][n] and subsubcommand[0]=="":
+                                                                awaitInput_commands[i[1]](k[1],subcommand[1],subsubcommand[1])
+                                                            return True,i[0][j],True,True,subcommand[1],True,command[len(i[0][j])+len(k[0][l]):] #placeholder!!!!!!!!
+                                                        else: #no values allowed
+                                                            pass
+                                    else: #explicit match ("replace exits")
+                                        if subcommand[1]==k[0][l] and subcommand[0]=="" and subcommand[2]=="":
+                                            if toExecute:
+                                                awaitInput_commands[i[1]](k[1],subcommand[1]) # --------- is this supposed to be subcommand[2] as well? needs testing
+                                            return True,i[0][j],True,True,subcommand[1],False,command[len(i[0][j])+len(k[0][l]):]
                                 else: #subsubcommand is a value
                                     if k[2]: #cropped match ("export txt ")
                                         if subcommand[1]==k[0][l] and subcommand[0]=="":
                                             if toExecute:
-                                                awaitInput_commands[i[1]](k[1],subcommand[1])
+                                                awaitInput_commands[i[1]](k[1],subcommand[2])
                                             return True,i[0][j],True,True,subcommand[1],False,command[len(i[0][j])+len(k[0][l]):]
                                     else: #explicit match ("export txt")
                                         if subcommand[1]==k[0][l] and subcommand[0]=="" and subcommand[2]=="":
                                             if toExecute:
-                                                awaitInput_commands[i[1]](k[1],subcommand[1])
+                                                awaitInput_commands[i[1]](k[1],"")
                                             return True,i[0][j],True,True,subcommand[1],False,command[len(i[0][j])+len(k[0][l]):]
                         if command1[2]=="": # exception for valid commands with no attributes after them
                             if toExecute:
@@ -773,18 +796,18 @@ def generalHelp(command):
         print(colorScheme["bold"]+"Export Command"+colorScheme["default"])
         print("This command exports an opened Super Mario Flash level to your desired format, such as Comma Separated Values (can be edited in Excel), the original SMF text format, or an experimental text format that contains a visual representation of level tiles.")
         print("\n"+colorScheme["bold"]+"Syntax"+colorScheme["default"])
-        print(colorScheme["command"]+"export"+colorScheme["default"]+" "+colorScheme["bold"]+"[format]"+colorScheme["default"])
-        print(colorScheme["command"]+"exp"+colorScheme["default"]+" "+colorScheme["bold"]+"[format]"+colorScheme["default"])
-        print(colorScheme["command"]+"e"+colorScheme["default"]+" "+colorScheme["bold"]+"[format]"+colorScheme["default"])
+        print(colorScheme["command"]+"export"+colorScheme["default"]+" "+colorScheme["bold"]+"[format] "+colorScheme["value"]+"[directory]"+colorScheme["default"])
+        print(colorScheme["command"]+"exp"+colorScheme["default"]+" "+colorScheme["bold"]+"[format] "+colorScheme["value"]+"[directory]"+colorScheme["default"])
+        print(colorScheme["command"]+"e"+colorScheme["default"]+" "+colorScheme["bold"]+"[format] "+colorScheme["value"]+"[directory]"+colorScheme["default"])
         print("\n"+colorScheme["bold"]+"Accepted Values"+colorScheme["default"])
         print("csv | txt | map")
     elif command=="import":
         print(colorScheme["bold"]+"Import Command"+colorScheme["default"])
         print("This command replaces specified tiles with a Comma Seperated Values (CSV) file.")
         print("\n"+colorScheme["bold"]+"Syntax"+colorScheme["default"])
-        print(colorScheme["command"]+"import"+colorScheme["default"]+" "+colorScheme["bold"]+"[type of tile data]"+colorScheme["default"])
-        print(colorScheme["command"]+"imp"+colorScheme["default"]+" "+colorScheme["bold"]+"[type of tile data]"+colorScheme["default"])
-        print(colorScheme["command"]+"i"+colorScheme["default"]+" "+colorScheme["bold"]+"[type of tile data]"+colorScheme["default"])
+        print(colorScheme["command"]+"import"+colorScheme["default"]+" "+colorScheme["bold"]+"[type of tile data] "+colorScheme["value"]+"[path]"+colorScheme["default"])
+        print(colorScheme["command"]+"imp"+colorScheme["default"]+" "+colorScheme["bold"]+"[type of tile data] "+colorScheme["value"]+"[path]"+colorScheme["default"])
+        print(colorScheme["command"]+"i"+colorScheme["default"]+" "+colorScheme["bold"]+"[type of tile data] "+colorScheme["value"]+"[path]"+colorScheme["default"])
         print("\n"+colorScheme["bold"]+"Accepted Values"+colorScheme["default"])
         print("level | lvl | l\nbonus | bns | b\nlayer 1 | layer1 | l1\nlayer 2 | layer2 | l2")
     elif command=="settings":
@@ -1090,7 +1113,23 @@ def openFile(filePath):
         print(strlib["te_file_name"])
         return "", ""
 
-    #print(level_code) # useful for debugging
+def saveFile(filePath):
+    if filePath=="":
+        filePath=filedialog.askdirectory(title=strlib["title_file_open_request"], initialdir=filePath)
+        if filePath=="":
+            print(strlib["te_file_save_decline"])
+            return filePath
+    else:
+        filePath=os.path.normpath(filePath)
+        if os.path.isdir(filePath):
+            root = tk.Tk()
+            root.withdraw()
+
+            filePath=filedialog.askdirectory(title=strlib["title_file_open_request"], initialdir=filePath)
+            if filePath=="":
+                print(strlib["te_file_save_decline"])
+                return filePath
+    return filePath
 
 def processFile(filePath):
     filePath, level_code=openFile(filePath)
@@ -1888,15 +1927,10 @@ def processFile(filePath):
         
 def exportAll(fileFormat, filePath):
     if game=="smf" or game=="smfe":
-        if fileFormat=="csv" or fileFormat=="txt" or fileFormat=="map": # this should be put elsewhere ###############
-            if filePath=="":
-                filePath=filedialog.askdirectory()
-        else:
-            print(strlib["te_file_type"])
-            return
+        filePath=saveFile(filePath)
         if filePath=="":
-            print(strlib["te_file_save_decline"])
             return
+        
         if fileFormat=="csv":
             output=""
             print("Processing Level tiles...")
@@ -2002,10 +2036,10 @@ def exportAll(fileFormat, filePath):
         print(strlib["success"])
         return
     elif game=="smf2" or game=="smf2c":
-        filePath=filedialog.askdirectory()
+        filePath=saveFile(filePath)
         if filePath=="":
-            print(strlib["te_file_save_decline"])
             return
+        
         if fileFormat=="csv":
             output=""
             tiles_read=0
@@ -2120,6 +2154,10 @@ def exportAll(fileFormat, filePath):
 def importTiles(toModify, filePath):
     if toModify=="":
         print(strlib["te_import_unspecified"])
+        return
+    
+    filePath=openFile(filePath)[0]
+    if filePath=="":
         return
     
     global level
@@ -2500,9 +2538,8 @@ def smf2WarpModifier(mode,xPos,yPos,warpType,extraVar):
                     if int(extraVar)<len(all_entrances)-1:
                         extraVar=str(int(extraVar)+1)
 
-def replace(toModify, data):
-    toModifySub=""
-    
+def replace(toModify, toModifySub, data):
+    print(toModify+","+toModifySub)
     global game
     
     global level_name
@@ -2542,719 +2579,6 @@ def replace(toModify, data):
     global layer_2
     
     if game!="":
-        if toModify=="header":
-            if data[:5]=="name ":
-                toModifySub="name"
-                data=data[5:]
-            elif data=="name":
-                toModifySub="name"
-                data=""
-            elif data[:2]=="n ":
-                toModifySub="name"
-                data=data[2:]
-            elif data=="n":
-                toModifySub="name"
-                data=""
-            elif data[:12]=="level width ":
-                toModifySub="lvlwidth"
-                data=data[12:]
-            elif data=="level width":
-                toModifySub="lvlwidth"
-                data=""
-            elif data[:9]=="lvlwidth ":
-                toModifySub="lvlwidth"
-                data=data[9:]
-            elif data[:8]=="lvlwidth":
-                toModifySub="lvlwidth"
-                data=data[8:]
-            elif data[:5]=="lvlw ":
-                toModifySub="lvlwidth"
-                data=data[5:]
-            elif data[:4]=="lvlw":
-                toModifySub="lvlwidth"
-                data=data[4:]
-            elif data[:3]=="lw ":
-                toModifySub="lvlwidth"
-                data=data[3:]
-            elif data[:2]=="lw":
-                toModifySub="lvlwidth"
-                data=data[2:]
-            elif data[:17]=="level background ":
-                toModifySub="lvlbg"
-                data=data[17:]
-            elif data=="level background":
-                toModifySub="lvlbg"
-                data=""
-            elif data[:6]=="lvlbg ":
-                toModifySub="lvlbg"
-                data=data[6:]
-            elif data[:5]=="lvlbg":
-                toModifySub="lvlbg"
-                data=data[5:]
-            elif data[:3]=="lb ":
-                toModifySub="lvlbg"
-                data=data[3:]
-            elif data[:2]=="lb":
-                toModifySub="lvlbg"
-                data=data[2:]
-            elif data[:12]=="level music ":
-                toModifySub="lvlmus"
-                data=data[12:]
-            elif data=="level music":
-                toModifySub="lvlmus"
-                data=""
-            elif data[:7]=="lvlmus ":
-                toModifySub="lvlmus"
-                data=data[6:]
-            elif data[:6]=="lvlmus":
-                toModifySub="lvlmus"
-                data=data[5:]
-            elif data[:3]=="lm ":
-                toModifySub="lvlmus"
-                data=data[3:]
-            elif data[:2]=="lm":
-                toModifySub="lvlmus"
-                data=data[2:]
-            elif data[:17]=="bonus background ":
-                toModifySub="bnsbg"
-                data=data[17:]
-            elif data=="bonus background":
-                toModifySub="bnsbg"
-                data=""
-            elif data[:6]=="bnsbg ":
-                toModifySub="bnsbg"
-                data=data[6:]
-            elif data[:5]=="bnsbg":
-                toModifySub="bnsbg"
-                data=data[5:]
-            elif data[:3]=="bb ":
-                toModifySub="bnsbg"
-                data=data[3:]
-            elif data[:2]=="bb":
-                toModifySub="bnsbg"
-                data=data[2:]
-            elif data[:12]=="bonus music ":
-                toModifySub="bnsmus"
-                data=data[12:]
-            elif data=="bonus music":
-                toModifySub="bnsmus"
-                data=""
-            elif data[:7]=="bnsmus ":
-                toModifySub="bnsmus"
-                data=data[6:]
-            elif data[:6]=="bnsmus":
-                toModifySub="bnsmus"
-                data=data[5:]
-            elif data[:3]=="bm ":
-                toModifySub="bnsmus"
-                data=data[3:]
-            elif data[:2]=="bm":
-                toModifySub="bnsmus"
-                data=data[2:]
-            elif data[:8]=="start x ":
-                toModifySub="startx"
-                data=data[8:]
-            elif data[:7]=="start x":
-                toModifySub="startx"
-                data=data[7:]
-            elif data[:7]=="startx ":
-                toModifySub="startx"
-                data=data[7:]
-            elif data[:6]=="startx":
-                toModifySub="startx"
-                data=data[6:]
-            elif data[:3]=="sx ":
-                toModifySub="startx"
-                data=data[3:]
-            elif data[:2]=="sx":
-                toModifySub="startx"
-                data=data[2:]
-            elif data[:8]=="start y ":
-                toModifySub="starty"
-                data=data[8:]
-            elif data[:7]=="start y":
-                toModifySub="starty"
-                data=data[7:]
-            elif data[:7]=="starty ":
-                toModifySub="starty"
-                data=data[7:]
-            elif data[:6]=="starty":
-                toModifySub="starty"
-                data=data[6:]
-            elif data[:3]=="sy ":
-                toModifySub="starty"
-                data=data[3:]
-            elif data[:2]=="sy":
-                toModifySub="starty"
-                data=data[2:]
-            elif data[:15]=="start sublevel ":
-                toModifySub="startat"
-                data=data[15:]
-            elif data=="start sublevel":
-                toModifySub="startat"
-                data=""
-            elif data[:8]=="start at ":
-                toModifySub="startat"
-                data=data[8:]
-            elif data=="start at":
-                toModifySub="startat"
-                data=""
-            elif data[:7]=="startat ":
-                toModifySub="startat"
-                data=data[7:]
-            elif data=="startat":
-                toModifySub="startat"
-                data=""
-            elif data[:3]=="sa ":
-                toModifySub="startat"
-                data=data[3:]
-            elif data[:2]=="sa":
-                toModifySub="startat"
-                data=""
-            elif data[:12]=="description ":
-                toModifySub="desc"
-                data=data[12:]
-            elif data=="description":
-                toModifySub="desc"
-                data=""
-            elif data[:5]=="desc ":
-                toModifySub="desc"
-                data=data[5:]
-            elif data=="desc":
-                toModifySub="desc"
-                data=""
-            elif data[:2]=="d ":
-                toModifySub="desc"
-                data=data[2:]
-            elif data=="d":
-                toModifySub="desc"
-                data=""
-            elif data[:11]=="background ":
-                toModifySub="bg"
-                data=data[11:]
-            elif data[:10]=="background":
-                toModifySub="bg"
-                data=data[10:]
-            elif data[:3]=="bg ":
-                toModifySub="bg"
-                data=data[3:]
-            elif data[:2]=="bg":
-                toModifySub="bg"
-                data=data[2:]
-            elif data[:2]=="b ":
-                toModifySub="bg"
-                data=data[2:]
-            elif data[:1]=="b":
-                toModifySub="bg"
-                data=data[1:]
-            elif data[:6]=="music ":
-                toModifySub="mus"
-                data=data[6:]
-            elif data[:5]=="music":
-                toModifySub="mus"
-                data=data[5:]
-            elif data[:4]=="mus ":
-                toModifySub="mus"
-                data=data[4:]
-            elif data[:3]=="mus":
-                toModifySub="mus"
-                data=data[3:]
-            elif data[:2]=="m ":
-                toModifySub="mus"
-                data=data[2:]
-            elif data[:1]=="m":
-                toModifySub="mus"
-                data=data[1:]
-            elif data[:11]=="startstate ":
-                toModifySub="powerup"
-                data=data[11:]
-            elif data=="startstate":
-                toModifySub="powerup"
-                data=""
-            elif data[:8]=="powerup ":
-                toModifySub="powerup"
-                data=data[8:]
-            elif data=="powerup":
-                toModifySub="powerup"
-                data=""
-            elif data[:2]=="p ":
-                toModifySub="powerup"
-                data=data[2:]
-            elif data[:1]=="p":
-                toModifySub="powerup"
-                data=data[1:]
-            elif data[:5]=="url1 ":
-                toModifySub="url1"
-                data=data[5:]
-            elif data=="url1":
-                toModifySub="url1"
-                data=""
-            elif data[:3]=="u1 ":
-                toModifySub="url1"
-                data=data[3:]
-            elif data=="u1":
-                toModifySub="url1"
-                data=""
-            elif data[:5]=="url2 ":
-                toModifySub="url2"
-                data=data[5:]
-            elif data=="url2":
-                toModifySub="url2"
-                data=""
-            elif data[:3]=="u2 ":
-                toModifySub="url2"
-                data=data[2:]
-            elif data=="u2":
-                toModifySub="url2"
-                data=""
-            elif data[:17]=="layer priority 1 ":
-                toModifySub="layerpri1"
-                data=data[17:]
-            elif data=="layer priority 1":
-                toModifySub="layerpri1"
-                data=""
-            elif data[:7]=="lpri 1 ":
-                toModifySub="layerpri1"
-                data=data[7:]
-            elif data=="lpri 1":
-                toModifySub="layerpri1"
-                data=""
-            elif data[:4]=="lp1 ":
-                toModifySub="layerpri1"
-                data=data[4:]
-            elif data=="lp1":
-                toModifySub="layerpri1"
-                data=""
-            elif data[:17]=="layer priority 2 ":
-                toModifySub="layerpri2"
-                data=data[17:]
-            elif data=="layer priority 2":
-                toModifySub="layerpri2"
-                data=""
-            elif data[:7]=="lpri 2 ":
-                toModifySub="layerpri2"
-                data=data[7:]
-            elif data=="lpri 2":
-                toModifySub="layerpri2"
-                data=""
-            elif data[:4]=="lp2 ":
-                toModifySub="layerpri2"
-                data=data[4:]
-            elif data=="lp2":
-                toModifySub="layerpri2"
-                data=""
-            elif data[:12]=="layer2 xpos ":
-                toModifySub="layer2x"
-                data=data[12:]
-            elif data=="layer2 xpos":
-                toModifySub="layer2x"
-                data=""
-            elif data[:9]=="layer2 x ":
-                toModifySub="layer2x"
-                data=data[9:]
-            elif data=="layer2 x":
-                toModifySub="layer2x"
-                data=""
-            elif data[:4]=="l2x ":
-                toModifySub="layer2x"
-                data=data[4:]
-            elif data=="l2x":
-                toModifySub="layer2x"
-                data=""
-            elif data[:12]=="layer2 ypos ":
-                toModifySub="layer2y"
-                data=data[12:]
-            elif data=="layer2 ypos":
-                toModifySub="layer2y"
-                data=""
-            elif data[:9]=="layer2 y ":
-                toModifySub="layer2y"
-                data=data[9:]
-            elif data=="layer2 y":
-                toModifySub="layer2y"
-                data=""
-            elif data[:4]=="l2y ":
-                toModifySub="layer2y"
-                data=data[4:]
-            elif data=="l2y":
-                toModifySub="layer2y"
-                data=""
-            elif data=="":
-                toModifySub=""
-            else:
-                print(strlib["te_attribute"])
-                return
-        elif toModify=="warps":
-            if data[:6].lower()=="level ":
-                sublevel="Level"
-                data=data[6:]
-            elif data[:5].lower()=="level":
-                sublevel="Level"
-                data=data[5:]
-            elif data[:4]=="lvl ":
-                sublevel="Level"
-                data=data[4:]
-            elif data[:3]=="lvl":
-                sublevel="Level"
-                data=data[3:]
-            elif data[:2]=="l ":
-                sublevel="Level"
-                data=data[2:]
-            elif data[:1]=="l":
-                sublevel="Level"
-                data=data[1:]
-            elif data[:6].lower()=="bonus ":
-                sublevel="Bonus"
-                data=data[6:]
-            elif data[:5].lower()=="bonus":
-                sublevel="Bonus"
-                data=data[5:]
-            elif data[:4]=="bns ":
-                sublevel="Bonus"
-                data=data[4:]
-            elif data[:3]=="bns":
-                sublevel="Bonus"
-                data=data[3:]
-            elif data[:2]=="b ":
-                sublevel="Bonus"
-                data=data[2:]
-            elif data[:1]=="b":
-                sublevel="Bonus"
-                data=data[1:]
-            elif data=="+":
-                toModifySub="add"
-            else:
-                warpNum=""
-                for i in data:
-                    if i==" " or not i.isnumeric():
-                        break
-                    else:
-                        warpNum+=i
-                if warpNum=="":
-                    print(colorScheme["typeerror"]+"Please specify a warp number."+colorScheme["default"])
-                    return
-                data=data[len(warpNum):]
-                try:
-                    if data[0]==" ":
-                        data=data[1:]
-                except:
-                    pass
-                if data=="-" or data=="rem" or data=="remove":
-                    toModifySub="remove"
-                elif data[:5]=="xpos ":
-                    toModifySub="xpos"
-                    data=data[5:]
-                elif data[:4]=="xpos":
-                    toModifySub="xpos"
-                    data=data[4:]
-                elif data[:2]=="x ":
-                    toModifySub="xpos"
-                    data=data[2:]
-                elif data[:1]=="x":
-                    toModifySub="xpos"
-                    data=data[1:]
-                elif data[:5]=="ypos ":
-                    toModifySub="ypos"
-                    data=data[5:]
-                elif data[:4]=="ypos":
-                    toModifySub="ypos"
-                    data=data[4:]
-                elif data[:2]=="y ":
-                    toModifySub="ypos"
-                    data=data[2:]
-                elif data[:1]=="y":
-                    toModifySub="ypos"
-                    data=data[1:]
-                elif data[:9]=="sublevel ":
-                    toModifySub="sublvl"
-                    data=data[9:]
-                elif data[:8]=="sublevel":
-                    toModifySub="sublvl"
-                    data=""
-                elif data[:7]=="sublvl ":
-                    toModifySub="sublvl"
-                    data=data[7:]
-                elif data[:6]=="sublvl":
-                    toModifySub="sublvl"
-                    data=""
-                elif data[:2]=="s ":
-                    toModifySub="sublvl"
-                    data=data[2:]
-                elif data[:1]=="s":
-                    toModifySub="sublvl"
-                    data=""
-                elif data[:7]=="xposto ":
-                    toModifySub="xposto"
-                    data=data[7:]
-                elif data[:6]=="xposto":
-                    toModifySub="xposto"
-                    data=data[6:]
-                elif data[:3]=="xt ":
-                    toModifySub="xposto"
-                    data=data[3:]
-                elif data[:2]=="xt":
-                    toModifySub="xposto"
-                    data=data[2:]
-                elif data[:7]=="yposto ":
-                    toModifySub="yposto"
-                    data=data[7:]
-                elif data[:6]=="yposto":
-                    toModifySub="yposto"
-                    data=data[6:]
-                elif data[:3]=="yt ":
-                    toModifySub="yposto"
-                    data=data[3:]
-                elif data[:2]=="yt":
-                    toModifySub="yposto"
-                    data=data[2:]
-                elif data[:10]=="direction ":
-                    toModifySub="dir"
-                    data=data[10:]
-                elif data[:9]=="direction":
-                    toModifySub="dir"
-                    data=""
-                elif data[:4]=="dir ":
-                    toModifySub="dir"
-                    data=data[4:]
-                elif data[:3]=="dir":
-                    toModifySub="dir"
-                    data=""
-                elif data[:2]=="d ":
-                    toModifySub="dir"
-                    data=data[2:]
-                elif data[:1]=="d":
-                    toModifySub="dir"
-                    data=""
-                elif data[:10]=="animation ":
-                    toModifySub="type"
-                    data=data[10:]
-                elif data[:9]=="animation":
-                    toModifySub="type"
-                    data=""
-                elif data[:5]=="anim ":
-                    toModifySub="type"
-                    data=data[5:]
-                elif data[:4]=="anim":
-                    toModifySub="type"
-                    data=""
-                elif data[:5]=="type ":
-                    toModifySub="type"
-                    data=data[5:]
-                elif data[:4]=="type":
-                    toModifySub="type"
-                    data=""
-                elif data[:2]=="t ":
-                    toModifySub="type"
-                    data=data[2:]
-                elif data[:1]=="t":
-                    toModifySub="type"
-                    data=""
-                elif data!="":
-                    print(strlib["te_attribute"])
-                    return
-        elif toModify=="entrances" or toModify=="exits":
-            if data=="+" or data=="add":
-                toModifySub="add"
-            elif data[:7]=="insert ":
-                toModifySub="insert"
-                data=data[7:]
-            elif data[:6]=="insert":
-                toModifySub="insert"
-                data=data[6:]
-            elif data[:2]=="i ":
-                toModifySub="insert"
-                data=data[2:]
-            elif data[:1]=="i":
-                toModifySub="insert"
-                data=data[1:]
-            else:
-                warpNum=""
-                for i in data:
-                    if i==" " or not i.isnumeric():
-                        break
-                    else:
-                        warpNum+=i
-                if warpNum=="":
-                    if toModify=="entrances":
-                        print(colorScheme["typeerror"]+"Please specify an entrance ID between 1 and "+str(len(all_entrances))+""+colorScheme["default"])
-                    else:
-                        print(colorScheme["typeerror"]+"Please specify an exit number between 0 and "+str(len(all_exits)-1)+""+colorScheme["default"])
-                    return
-                data=data[len(warpNum):]
-                try:
-                    if data[0]==" ":
-                        data=data[1:]
-                except:
-                    pass
-                if data=="-" or data=="rem" or data=="remove":
-                    toModifySub="remove"
-                elif data[:5]=="swap ":
-                    toModifySub="swap"
-                    data=data[5:]
-                elif data[:4]=="swap":
-                    toModifySub="swap"
-                    data=data[4:]
-                elif data[:2]=="s ":
-                    toModifySub="swap"
-                    data=data[2:]
-                elif data[:1]=="s":
-                    toModifySub="swap"
-                    data=data[1:]
-                elif data[:5]=="xpos ":
-                    toModifySub="xpos"
-                    data=data[5:]
-                elif data[:4]=="xpos":
-                    toModifySub="xpos"
-                    data=data[4:]
-                elif data[:2]=="x ":
-                    toModifySub="xpos"
-                    data=data[2:]
-                elif data[:1]=="x":
-                    toModifySub="xpos"
-                    data=data[1:]
-                elif data[:5]=="ypos ":
-                    toModifySub="ypos"
-                    data=data[5:]
-                elif data[:4]=="ypos":
-                    toModifySub="ypos"
-                    data=data[4:]
-                elif data[:2]=="y ":
-                    toModifySub="ypos"
-                    data=data[2:]
-                elif data[:1]=="y":
-                    toModifySub="ypos"
-                    data=data[1:]
-                elif data[:5]=="type ":
-                    toModifySub="type"
-                    data=data[5:]
-                elif data[:4]=="type":
-                    toModifySub="type"
-                    data=data[4:]
-                elif data[:2]=="t ":
-                    toModifySub="type"
-                    data=data[2:]
-                elif data[:1]=="t":
-                    toModifySub="type"
-                    data=data[1:]
-                elif data[:6]=="state " and toModify=="entrances":
-                    toModifySub="state"
-                    data=data[6:]
-                elif data[:5]=="state" and toModify=="entrances":
-                    toModifySub="state"
-                    data=""
-                elif data[:2]=="s " and toModify=="entrances":
-                    toModifySub="state"
-                    data=data[2:]
-                elif data[:1]=="s" and toModify=="entrances":
-                    toModifySub="state"
-                    data=""
-                elif data[:7]=="linkto " and toModify=="exits":
-                    toModifySub="linkto"
-                    data=data[7:]
-                elif data[:6]=="linkto" and toModify=="exits":
-                    toModifySub="linkto"
-                    data=""
-                elif data[:2]=="l " and toModify=="exits":
-                    toModifySub="linkto"
-                    data=data[2:]
-                elif data[:1]=="l" and toModify=="exits":
-                    toModifySub="linkto"
-                    data=""
-                elif data!="":
-                    print(strlib["te_attribute"])
-                    return
-        elif toModify=="tiles":
-            if data[:8]=="layer 1 ":
-                sublevel="lay1"
-                data=data[8:]
-            elif data[:7]=="layer 1":
-                sublevel="lay1"
-                data=""
-            elif data[:7]=="layer1 ":
-                sublevel="lay1"
-                data=data[7:]
-            elif data[:6]=="layer1":
-                sublevel="lay1"
-                data=""
-            elif data[:3]=="l1 ":
-                sublevel="lay1"
-                data=data[3:]
-            elif data[:2]=="l1":
-                sublevel="lay1"
-                data=""
-            elif data[:8]=="layer 2 ":
-                sublevel="lay2"
-                data=data[8:]
-            elif data[:7]=="layer 2":
-                sublevel="lay2"
-                data=""
-            elif data[:7]=="layer2 ":
-                sublevel="lay2"
-                data=data[7:]
-            elif data[:6]=="layer2":
-                sublevel="lay2"
-                data=""
-            elif data[:3]=="l2 ":
-                sublevel="lay2"
-                data=data[3:]
-            elif data[:2]=="l2":
-                sublevel="lay2"
-                data=""
-            elif data[:6].lower()=="level ":
-                sublevel="lvl"
-                data=data[6:]
-            elif data[:5].lower()=="level":
-                sublevel="lvl"
-                data=data[5:]
-            elif data[:4]=="lvl ":
-                sublevel="lvl"
-                data=data[4:]
-            elif data[:3]=="lvl":
-                sublevel="lvl"
-                data=data[3:]
-            elif data[:2]=="l ":
-                sublevel="lvl"
-                data=data[2:]
-            elif data[:1]=="l":
-                sublevel="lvl"
-                data=data[1:]
-            elif data[:6].lower()=="bonus ":
-                sublevel="bns"
-                data=data[6:]
-            elif data[:5].lower()=="bonus":
-                sublevel="bns"
-                data=data[5:]
-            elif data[:4]=="bns ":
-                sublevel="bns"
-                data=data[4:]
-            elif data[:3]=="bns":
-                sublevel="bns"
-                data=data[3:]
-            elif data[:2]=="b ":
-                sublevel="bns"
-                data=data[2:]
-            elif data[:1]=="b":
-                sublevel="bns"
-                data=data[1:]
-            else:
-                print(strlib["te_attribute"])
-                return
-            tileReplacerValues=["","","","",""]
-            tileReplacerIndex=0
-            for i in data:
-                if i==" ":
-                    tileReplacerIndex=4
-                elif i==":":
-                    if tileReplacerIndex==0 or tileReplacerIndex==2:
-                        tileReplacerIndex+=1
-                elif i==",":
-                    if tileReplacerIndex==1 or tileReplacerIndex==3:
-                        tileReplacerIndex+=1
-                    elif tileReplacerIndex==0 or tileReplacerIndex==2:
-                        tileReplacerIndex+=2
-                else:
-                    tileReplacerValues[tileReplacerIndex]+=i
-        
         if game=="smf" or game=="smfe":
             data=data.replace("(","[").replace(")","]")
         elif game=="smf2" or game=="smf2c":

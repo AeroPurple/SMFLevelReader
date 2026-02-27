@@ -22,6 +22,8 @@ except:
 
 date="27 Feb 2026"
 
+versionNames=[0,"0.9","0.10 Beta"]
+
 str={
     "err_line":" occured on line ",
     "err_mod_curses":colorScheme["error"]+"No Curses module installed."+colorScheme["default"]+" You will be unable to use "+colorScheme["command"]+"settings"+colorScheme["default"]+" and "+colorScheme["command"]+"replace"+colorScheme["default"]+" commands, as they use a Curses GUI.\nPlease install it using the "+colorScheme["bold"]+"pip install curses"+colorScheme["default"]+" command.",

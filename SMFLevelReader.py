@@ -24,7 +24,7 @@ from subprocess import call
 try:
     from strlib import str as strlib
     from strlib import date as release_date
-    from strlib import smfe_background_names, smfe_music_names, smf2_background_names, smf2c_background_names, smf2c_music_names, smf2_powerup_names, smf2_entrance_types, smf2_entrance_powerups, smf2_exit_types, smf_tiles, smf2_tiles
+    from strlib import smfe_background_names, smfe_music_names, smf2_background_names, smf2c_background_names, smf2c_music_names, smf2_powerup_names, smf2_entrance_types, smf2_entrance_powerups, smf2_exit_types, smf_tiles, smf2_tiles, versionNames
 except:
     print("Critical Error: string library not found")
     exit(1)
@@ -621,7 +621,6 @@ def input(prefaceString, failSafeCommand):
             print("\r"+prefaceString+output, end='', flush=True)
     return command.replace("\\n","\n")
 
-versionNames=[0,"0.9","0.10 Beta"]
 configVersion=0
 programVersion=2
 firstRun=False

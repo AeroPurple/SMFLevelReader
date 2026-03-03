@@ -97,11 +97,16 @@ str={
     "info_gen_tx":" tiles horz, ",
     "info_gen_ty":" tiles vert",
     "gen_softlocker":colorScheme["warning"]+"softlocks the game"+colorScheme["default"],
+    "gen_modify_to":"Change {0} to: ",
+    "gen_modify_from_to":"Change {0} from "+colorScheme["bold"]+"{1}"+colorScheme["default"]+" to: ",
+    "gen_modified_to":colorScheme["success"]+"Successfully changed {0} to {1}"+colorScheme["default"],
+    "gen_modified_from_to":colorScheme["success"]+"Successfully changed {0} from {1} to {2}"+colorScheme["default"],
     "gen_inv":"invalid, ",
     "gen_none":"None",
     "gen_none_f":colorScheme["null"]+"None"+colorScheme["default"],
     "gen_no":"No",
     "gen_yes":"Yes",
+    "q":"\""
 }
 
 smfe_background_names=[

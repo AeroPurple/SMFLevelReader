@@ -1,5 +1,3 @@
-useANSI=1
-
 ANSICodes={
     0:["","","","","","","","","","","","","","","","","","","",""],
     1:["\033[0m","\033[1m","\x1B[3m","\x1B[4m","\033[30m","\033[31m","\033[32m","\033[33m","\033[34m","\033[35m","\033[36m","\033[37m","\033[90m","\033[91m","\033[92m","\033[93m","\033[94m","\033[95m","\033[96m","\033[97m"]
@@ -22,7 +20,8 @@ colorScheme={
     "typeinvalid":""
 }
 
-def defineColors():
+def defineColors(useANSI):
+    print(useANSI)
     global colorScheme
     
     DEFAULT=ANSICodes[useANSI][0]
@@ -46,7 +45,7 @@ def defineColors():
     CYAN=ANSICodes[useANSI][18]
     WHITE=ANSICodes[useANSI][19]
 
-    colorScheme={
+    return {
         "default":DEFAULT,
         "bold":BOLD,
         "error":RED, # used to be DIM_RED

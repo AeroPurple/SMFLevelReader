@@ -32,7 +32,8 @@ except:
 try:
     import colorscheme
     from colorscheme import colorScheme
-except:
+except Exception as e:
+    print(e)
     colorScheme={
         "default":"",
         "bold":"",
@@ -204,7 +205,11 @@ awaitInput_deabbreviator=[
     [["settings ","set ","s ","s"],"settings",True,True,False,
         [
             [["waittime ","wait ","delay ","w ","w"],"wait",True],
-            [["waittime","wait","delay"],"wait",False]
+            [["waittime","wait","delay"],"wait",False],
+            [["decortype ","decor ","d ","d"],"decor",True],
+            [["decortype","decor"],"decor",False],
+            [["useansi ","ua ","ua"],"useansi",True],
+            [["useansi"],"useansi",False]
         ]
     ],
     [["settings","set"],"settings",False],
@@ -684,10 +689,24 @@ def changeConfig(setting, value):
     
     if setting!="":
         if setting=="wait":
-            titleScreenWaitTime=int(value)&255
-            print(titleScreenWaitTime)
-        # --------------------- more options
+            if value=="":
+                value=input(f"{strlib['gen_modify_from_to'].format('title screen delay', str(titleScreenWaitTime*16)+' ms')}", titleScreenWaitTime*16)
+            titleScreenWaitTime=int(int(value)/16)
+            if titleScreenWaitTime>255:
+                titleScreenWaitTime=255
+            print(f"{strlib['gen_modified_to'].format('title screen delay', str(titleScreenWaitTime*16)+' ms')}")
+        elif setting=="decor":
+            if value=="":
+                value=input(f"{strlib['gen_modify_from_to'].format('decoration type', strlib['q']+decorTypes[decorType]+strlib['q'])}", decorType)
+            decorType=int(value)&3
+            print(f"{strlib['gen_modified_to'].format('decoration type', strlib['q']+decorTypes[decorType]+strlib['q'])}")
+        elif setting=="useansi":
+            if value=="":
+                value=input(f"{strlib['gen_modify_from_to'].format('ANSI mode', bool(useANSI))}", useANSI)
+            useANSI=int(value)&1
+            print(f"{strlib['gen_modified_to'].format('ANSI mode', bool(useANSI))}")
         configSave(programVersion,titleScreenWaitTime,decorType,useANSI)
+        colorScheme=colorscheme.defineColors(useANSI)
     else:
         try:
             console=curses.initscr()
@@ -764,7 +783,7 @@ def changeConfig(setting, value):
                     elif current_item==5:
                         configSave(programVersion,titleScreenWaitTime,decorType,useANSI)
                     try:
-                        colorscheme.defineColors()
+                        colorScheme=colorscheme.defineColors(useANSI)
                     except:
                         pass
                     curses.endwin()
@@ -3597,9 +3616,11 @@ def awaitInput():
 
 configLoad()
 try:
-    colorscheme.defineColors()
-except:
+    colorScheme=colorscheme.defineColors(useANSI)
+except Exception as e:
+    print(e)
     colorschemeMissing=True
+time.sleep(2)
 clear()
 if decorType!=0:
     title=" SMF Level Reader v"+versionNames[programVersion]+" "
@@ -3627,4 +3648,5 @@ print(strlib["greet_ask"])
 usedCommands=[]
 current_command=0
 current_window=checkForeground() # fix for Windows Powershell
+print(colorScheme)
 awaitInput()

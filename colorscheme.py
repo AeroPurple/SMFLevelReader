@@ -21,7 +21,6 @@ colorScheme={
 }
 
 def defineColors(useANSI):
-    print(useANSI)
     global colorScheme
     
     DEFAULT=ANSICodes[useANSI][0]

@@ -1,8 +1,19 @@
 try:
+    from configLoader import convertToConfigData
+    from configLoader import configSave
+    from configLoader import configLoad
+    configLoad()
+    from configLoader import titleScreenWaitTime, decorType, useANSI, configVersion, programVersion
+except Exception as e:
+    print(e)
+    print("Critical Error: config loader not found")
+    exit(1)
+
+try:
     import colorscheme
-    colorscheme.defineColors()
-    from colorscheme import colorScheme
-except:
+    colorScheme=colorscheme.defineColors(useANSI)
+except Exception as e:
+    print(e)
     colorScheme={
         "default":"",
         "bold":"",

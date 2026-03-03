@@ -21,19 +21,11 @@ except:
     
 from sys import exit
 from subprocess import call
-try:
-    from strlib import str as strlib
-    from strlib import date as release_date
-    from strlib import smfe_background_names, smfe_music_names, smf2_background_names, smf2c_background_names, smf2c_music_names, smf2_powerup_names, smf2_entrance_types, smf2_entrance_powerups, smf2_exit_types, smf_tiles, smf2_tiles, versionNames
-except:
-    print("Critical Error: string library not found")
-    exit(1)
 
 try:
     import colorscheme
     from colorscheme import colorScheme
-except Exception as e:
-    print(e)
+except:
     colorScheme={
         "default":"",
         "bold":"",
@@ -51,11 +43,22 @@ except Exception as e:
         "typeinvalid":""
     }
 
-def get_application_path():
-    if hasattr(sys, 'frozen'):
-        return os.path.dirname(sys.executable)
-    else:
-        return os.path.dirname(__file__)
+try:
+    from strlib import str as strlib
+    from strlib import date as release_date
+    from strlib import smfe_background_names, smfe_music_names, smf2_background_names, smf2c_background_names, smf2c_music_names, smf2_powerup_names, smf2_entrance_types, smf2_entrance_powerups, smf2_exit_types, smf_tiles, smf2_tiles, versionNames
+except:
+    print("Critical Error: string library not found")
+    exit(1)
+
+try:
+    from configLoader import convertToConfigData
+    from configLoader import configSave
+    from configLoader import configLoad
+    from configLoader import titleScreenWaitTime, decorType, useANSI, configVersion, programVersion
+except:
+    print("Critical Error: config loader not found")
+    exit(1)
 
 curses_imported=False
 try:
@@ -71,8 +74,6 @@ try:
 except:
     pass
 
-titleScreenWaitTime=0
-decorType=0
 current_command=0
 usedCommands=[]
         
@@ -632,53 +633,10 @@ def input(prefaceString, failSafeCommand):
             print("\r"+prefaceString+output, end='', flush=True)
     return command.replace("\\n","\n")
 
-configVersion=0
-programVersion=2
 firstRun=False
 colorschemeMissing=False
 
 decorTypes=[" ","─","━","═"]
-
-def convertToConfigData(versionIndex,waitTime,decorType,useANSI):
-    return (((versionIndex<<8|waitTime)<<2|decorType)<<1|(useANSI))<<7
-    
-def configSave(versionIndex,waitTime,decorType,useANSI):
-    configData=convertToConfigData(versionIndex,waitTime,decorType,useANSI)
-    configData=configData.to_bytes(3,'big')
-    configFile=open(os.path.join(get_application_path(), 'Settings.cfg'),mode='wb')
-    configFile.write(configData)
-    configFile.close()
-
-def configLoad():
-    global configVersion
-    global titleScreenWaitTime
-    global decorType
-    global useANSI
-    global firstRun
-    
-    try:
-        configFile=open(os.path.join(get_application_path(), 'Settings.cfg'),mode='rb')
-    except:
-        configSave(programVersion,62,2,1)
-        configFile=open(os.path.join(get_application_path(), 'Settings.cfg'),mode='rb')
-        firstRun=True
-    finally:
-        try:
-            configData=configFile.read()
-            if int((bin(int.from_bytes(configData,'big'))[2:].zfill(16))[:6],2)==1:
-                configVersion=1
-                configData=bin(int.from_bytes(configData,'big'))[2:].zfill(16)
-            else:
-                configData=bin(int.from_bytes(configData,'big'))[2:].zfill(24)
-                configVersion=int(configData[:6],2)
-            if configVersion+1>len(versionNames) or versionNames[configVersion]==0:
-                print(strlib["err_conf_load"])
-            titleScreenWaitTime=int(configData[6:14],2)
-            decorType=int(configData[14:16],2)
-            useANSI=int(configData[16:17])
-            configFile.close()
-        except:
-            configSave(programVersion,62,2,1)
         
 def changeConfig(setting, value):
     configLoad()
@@ -3620,7 +3578,6 @@ try:
 except Exception as e:
     print(e)
     colorschemeMissing=True
-time.sleep(2)
 clear()
 if decorType!=0:
     title=" SMF Level Reader v"+versionNames[programVersion]+" "
@@ -3648,5 +3605,4 @@ print(strlib["greet_ask"])
 usedCommands=[]
 current_command=0
 current_window=checkForeground() # fix for Windows Powershell
-print(colorScheme)
 awaitInput()

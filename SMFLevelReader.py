@@ -3599,6 +3599,7 @@ if not curses_imported:
     print(strlib["err_mod_curses"]+"\n")
 if not keyboard_imported:
     print(strlib["err_mod_keyboard"]+"\n")
+    exit(1)
 
 time.sleep(titleScreenWaitTime/1000*16)
 print(strlib["greet_ask"])

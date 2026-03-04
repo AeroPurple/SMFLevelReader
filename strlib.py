@@ -61,6 +61,7 @@ str={
     "te_file_busy":colorScheme["typeerror"]+"File in use!"+colorScheme["default"],
     "te_file_name":colorScheme["typeerror"]+"No such file or directory!"+colorScheme["default"],
     "te_file_type":colorScheme["typeerror"]+"Invalid file format!"+colorScheme["default"],
+    "te_rep_no_attr":colorScheme["typeerror"]+"No data specified!"+colorScheme["default"],
     "te_rep_sublvl":colorScheme["typeerror"]+"Invalid sublevel!"+colorScheme["default"],
     "te_rep_smf_desc":colorScheme["typeerror"]+"No description attribute exists for SMF."+colorScheme["default"],
     "te_rep_smf_bg":colorScheme["typeerror"]+"No background attribute exists for SMF. Please specify whether you're modifying a level or bonus background."+colorScheme["default"],

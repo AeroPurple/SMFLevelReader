@@ -54,7 +54,7 @@ def defineColors(useANSI):
         "null":BLACK, # used to be ITALIC
         "typeerror":DIM_YELLOW, # used to be ITALIC
         "command":YELLOW,
-        "subcommand":DEFAULT+BOLD,
+        "subcommand":WHITE, # used to be DEFAULT+BOLD
         "section":DEFAULT,
         "id":GREEN,
         "value":CYAN,

@@ -156,7 +156,7 @@ awaitInput_commands={
     "export": lambda arg, value: exportAll(arg, value),
     "import": lambda arg, value: importTiles(arg, value),
     "settings": lambda arg, value: changeConfig(arg, value),
-    "replace": lambda arg1, arg2: replace(arg1, arg2, arg3),
+    "replace": lambda arg1, arg2, arg3: replace(arg1, arg2, arg3),
     "header": lambda arg: printInfo(),
     "help": lambda arg, dummy: generalHelp(arg),
     "exit": lambda dummy: (clear(),exit(0))[1],
@@ -456,25 +456,33 @@ def testInputMatch(command, toExecute):
                                         if subcommand[1]==k[0][l] and subcommand[0]=="":
                                             for m in k[3]:
                                                 for n in range(len(m[0])):
-                                                    #print(m[0][n],m[2])
                                                     if "w" in m[3]: #needs warp ID first
-                                                        pass
+                                                        print("w command")
                                                     else: #no checking for versions yet!!! the replace method still is in charge of this
                                                         if m[0][n]!="":
                                                             subsubcommand=subcommand[2].partition(m[0][n])
                                                         else:
                                                             subsubcommand=("", "", "")
-                                                        #print(subsubcommand)
+                                                        # print(subsubcommand)
                                                         if m[2]: #values allowed?
-                                                            if subsubcommand[1]==m[0][n] and subsubcommand[0]=="":
-                                                                awaitInput_commands[i[1]](k[1],subcommand[1],subsubcommand[1])
-                                                            return True,i[0][j],True,True,subcommand[1],True,command[len(i[0][j])+len(k[0][l]):] #placeholder!!!!!!!!
-                                                        else: #no values allowed
                                                             pass
+                                                            # print(f"m[2] '{subsubcommand[1]}'=='{m[0][n]}'? --- {subsubcommand[1]==m[0][n]}")
+                                                            # if subsubcommand[1]==m[0][n] and subsubcommand[0]=="":
+                                                                # if toExecute:
+                                                                   # awaitInput_commands[i[1]](k[1],subcommand[1],subsubcommand[1])
+                                                                # return True,i[0][j],True,True,subcommand[1],True,command[len(i[0][j])+len(k[0][l]):] #placeholder!!!!!!!!
+                                                        else:
+                                                            if subsubcommand[1]==m[0][n] and subsubcommand[0]=="" and subsubcommand[2]=="" and not subsubcommand[1]=="":
+                                                                #print(subsubcommand)
+                                                                #print(f"'{subsubcommand[1]}'=='{m[0][n]}'? --- {subsubcommand[1]==m[0][n]}")
+                                                                if toExecute:
+                                                                   awaitInput_commands[i[1]](k[1],m[1],"")
+                                                                return True,i[0][j],True,True,subcommand[1],True,True,command[len(i[0][j])+len(k[0][l]):]
+                                            return True,i[0][j],True,True,subcommand[1],True,False,command[len(i[0][j])+len(k[0][l]):]
                                     else: #explicit match ("replace exits")
                                         if subcommand[1]==k[0][l] and subcommand[0]=="" and subcommand[2]=="":
                                             if toExecute:
-                                                awaitInput_commands[i[1]](k[1],subcommand[1]) # --------- is this supposed to be subcommand[2] as well? needs testing
+                                                awaitInput_commands[i[1]](k[1],"","") # --------- is this supposed to be subcommand[2] as well? needs testing
                                             return True,i[0][j],True,True,subcommand[1],False,command[len(i[0][j])+len(k[0][l]):]
                                 else: #subsubcommand is a value
                                     if k[2]: #cropped match ("export txt ")
@@ -489,7 +497,10 @@ def testInputMatch(command, toExecute):
                                             return True,i[0][j],True,True,subcommand[1],False,command[len(i[0][j])+len(k[0][l]):]
                         if command1[2]=="": # exception for valid commands with no attributes after them
                             if toExecute:
-                                awaitInput_commands[i[1]]("","")
+                                try:
+                                    awaitInput_commands[i[1]]("","")
+                                except:
+                                    awaitInput_commands[i[1]]("","","") # empty "replace " commands
                             return True,i[0][j],False,""
                         return True,i[0][j],True,False,command[len(i[0][j]):] #matched/not, command, has subcommand, matched/not subcommand, subcommand
                     else:
@@ -501,65 +512,12 @@ def testInputMatch(command, toExecute):
                         try:
                             awaitInput_commands[i[1]]("") # execute from command library with args
                         except:
-                            awaitInput_commands[i[1]]("","") # things like "export" - valid commands with two args in deabbreviator
+                            try:
+                                awaitInput_commands[i[1]]("","") # things like "export" - valid commands with two args in deabbreviator
+                            except:
+                                awaitInput_commands[i[1]]("","","") # empty "replace" commands
                     return True,i[0][j],False,"" # matched/not, command, is next part a command, dummy argument
     return False,command # matched/not, command
-    
-    # for i in awaitInput_deabbreviator: # iterates through all entries of awaitInput_deabbreviator
-        # for j in range(len(i[0])): # iterates through all command versions (e.g. i[0])
-            # if i[2]: # check if the first boolean placed in each entry is true or false
-                # if command[:len(i[0][j])]==i[0][j]: # if typed command cut to length of command version matches
-                    # if i[3]: # if more commands are allowed
-                        # for k in i[5]: # iterate through subcommands
-                            # for l in range(len(k[0])): # iterate through versions
-                                # if i[4]: #subsubcommands allowed?
-                                    # if k[2]: #cropped match -------------------------------------------------- add cycle through all subsubcommands for validity!
-                                        # if command[len(i[0][j]):len(i[0][j])+len(k[0][l])]==k[0][l]:
-                                            # for m in k[3]:
-                                                # for n in range(len(m[0])): # -------------- incomplete: "rnst" is valid while "rw" isn't...
-                                                    # if m[2]: #cropped match
-                                                        # print(colorScheme["id"]+"Comparing to: "+i[0][j]+k[0][l]+m[0][n])
-                                                        # print(command[len(i[0][j])+len(k[0][l]):]+"=="+m[0][n]+": "+str(command[len(i[0][j])+len(k[0][l]):]==m[0][n])+colorScheme["default"])
-                                                        # if command[len(i[0][j])+len(k[0][l]):len(k[0][l])+len(m[0][n])+1]==m[0][n]: # --implement warp numbers!
-                                                            # #print(colorScheme["id"]+"\nCropped match: "+i[0][j],k[0][l],m[0][n]+colorScheme["default"])
-                                                            # return True,i[0][j],True,True,command[len(i[0][j]):len(i[0][j])+len(k[0][l])],True,command[len(i[0][j])+len(k[0][l]):]
-                                                    # else: #explicit match
-                                                        # print(colorScheme["id"]+"Comparing to: "+i[0][j]+k[0][l]+m[0][n])
-                                                        # print(command[len(i[0][j])+len(k[0][l]):]+"=="+m[0][n]+": "+str(command[len(i[0][j])+len(k[0][l]):]==m[0][n])+colorScheme["default"])
-                                                        # if command[len(i[0][j])+len(k[0][l]):]==m[0][n]: # --implement warp numbers?
-                                                            # print(colorScheme["error"]+"\nExplicit match: "+i[0][j]+k[0][l]+m[0][n]+colorScheme["default"])
-                                                            # return True,i[0][j],True,True,command[len(i[0][j]):len(i[0][j])+len(k[0][l])],True,command[len(i[0][j])+len(k[0][l]):]
-                                        # #    if command[len(i[0][j]):len(i[0][j])+len(k[0][l])]==k[0][l]:
-                                        # #       if toExecute:
-                                        # #            awaitInput_commands[i[1]](k[1],command[len(i[0][j])+len(k[0][l]):])
-                                        # #        return True,i[0][j],True,True,command[len(i[0][j]):len(i[0][j])+len(k[0][l])],True,command[len(i[0][j])+len(k[0][l]):]
-                                    # else: #explicit match
-                                        # if command[len(i[0][j]):]==k[0][l]:
-                                            # if toExecute:
-                                                # awaitInput_commands[i[1]](k[1],command[len(i[0][j])+len(k[0][l]):])
-                                            # return True,i[0][j],True,True,command[len(i[0][j]):len(i[0][j])+len(k[0][l])],True,command[len(i[0][j])+len(k[0][l]):]
-                                # else: #subsubcommand is a value
-                                    # if k[2]: #cropped match ("export txt ")
-                                        # if command[len(i[0][j]):len(i[0][j])+len(k[0][l])]==k[0][l]:
-                                            # if toExecute:
-                                                # awaitInput_commands[i[1]](k[1],command[len(i[0][j])+len(k[0][l]):])
-                                            # return True,i[0][j],True,True,command[len(i[0][j]):len(i[0][j])+len(k[0][l])],False,command[len(i[0][j])+len(k[0][l]):]
-                                    # else: #explicit match ("export txt")
-                                        # if command[len(i[0][j]):]==k[0][l]:
-                                            # if toExecute:
-                                                # awaitInput_commands[i[1]](k[1],command[len(i[0][j])+len(k[0][l]):])
-                                            # return True,i[0][j],True,True,command[len(i[0][j]):len(i[0][j])+len(k[0][l])],False,command[len(i[0][j])+len(k[0][l]):]
-                        # return True,i[0][j],True,False,command[len(i[0][j]):] #matched/not, command, has subcommand, matched/not subcommand, subcommand
-                    # else:
-                        # if toExecute:
-                            # awaitInput_commands[i[1]](command[len(i[0][j]):]) # execute from command library with args
-                        # return True,i[0][j],False,command[len(i[0][j]):] # matched/not, command, is next part a command, argument
-            # else:
-                # if command==i[0][j]: # if typed command EXPLICITLY matches with command version, highlight
-                    # if toExecute:
-                        # awaitInput_commands[i[1]]("") # execute from command library with args
-                    # return True,i[0][j],False,"" # matched/not, command, is next part a command, dummy argument
-    # return False,command # matched/not, command
         
 def input(prefaceString, failSafeCommand):
     global current_command
@@ -609,20 +567,24 @@ def input(prefaceString, failSafeCommand):
                 current_command=len(usedCommands)
             output=""
             if awaitInputMode:
-                if not testInputMatch(command, False)[0]:
+                test=testInputMatch(command, False)
+                if not test[0]:
                     output+=colorScheme["typeinvalid"]+command
                 else:
-                    output+=colorScheme["command"]+testInputMatch(command, False)[1]
-                    if testInputMatch(command, False)[2]:
-                        if testInputMatch(command, False)[3]:
-                            if testInputMatch(command, False)[5]:
-                                output+=colorScheme["subcommand"]+testInputMatch(command, False)[4]+colorScheme["section"]+testInputMatch(command, False)[6]
+                    output+=colorScheme["command"]+test[1]
+                    if test[2]:
+                        if test[3]:
+                            if test[5]:
+                                if test[6]:
+                                    output+=colorScheme["subcommand"]+test[4]+colorScheme["section"]+test[7]
+                                else:
+                                    output+=colorScheme["subcommand"]+test[4]+colorScheme["typeinvalid"]+test[7]
                             else:
-                                output+=colorScheme["subcommand"]+testInputMatch(command, False)[4]+colorScheme["value"]+testInputMatch(command, False)[6]
+                                output+=colorScheme["subcommand"]+test[4]+colorScheme["value"]+test[6]
                         else:
-                            output+=colorScheme["typeinvalid"]+testInputMatch(command, False)[4]
+                            output+=colorScheme["typeinvalid"]+test[4]
                     else:
-                        output+=colorScheme["value"]+testInputMatch(command, False)[3]
+                        output+=colorScheme["value"]+test[3]
             else:
                 output+=colorScheme["value"]+command
             output+=colorScheme["default"]
@@ -3549,6 +3511,8 @@ def replace(toModify, toModifySub, data):
                             print("Replaced "+str(tilesReplaced)+" tiles with tile ID "+tileReplacerValues[4]+" ("+smf2_tiles[int(tileReplacerValues[4])][1]+")")
                     except:
                         print("Replaced "+str(tilesReplaced)+" tiles with tile ID "+tileReplacerValues[4]+" ("+smf_tiles[0][1]+")")
+        else:
+            print(strlib["te_rep_no_attr"])
         return
     else:
         print(strlib["te_no_level"])

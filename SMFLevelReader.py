@@ -209,7 +209,7 @@ awaitInput_deabbreviator=[
             [["layer 2","layer2","l2"],"l2",False]
         ]
     ],
-    [["settings ","set ","s ","s"],"settings",True,True,False,
+    [["settings ","set ","s "],"settings",True,True,False,
         [
             [["waittime ","wait ","delay ","w ","w"],"wait",True],
             [["waittime","wait","delay"],"wait",False],
@@ -220,6 +220,16 @@ awaitInput_deabbreviator=[
         ]
     ],
     [["settings","set"],"settings",False],
+    [["s"],"settings",True,True,False,
+        [
+            [["waittime ","wait ","delay ","w ","w"],"wait",True],
+            [["waittime","wait","delay"],"wait",False],
+            [["decortype ","decor ","d ","d"],"decor",True],
+            [["decortype","decor"],"decor",False],
+            [["useansi ","ua ","ua"],"useansi",True],
+            [["useansi"],"useansi",False]
+        ]
+    ],
     [["replace ","rep ","r "],"replace",True,True,True,
         [
             [["header","head"],"header",False],
@@ -290,8 +300,7 @@ awaitInput_deabbreviator=[
             [["entrances"],"entrances",False],
             [["entrance ","entrance","entr ","entr","n ","n"],"entrances",True,
                 [
-                    [["add ","+ ","+"],"add",True,"2"],
-                    [["add"],"add",False,"2"],
+                    [["add ","add","+ ","+"],"add",False,"2"],
                     [["insert ","insert","i ","i"],"insert",True,"2"],
                     [["remove","rem","-"],"remove",False,"2w"],
                     [["swap ","swap","s ","s"],"swap",True,"2w"],
@@ -304,8 +313,7 @@ awaitInput_deabbreviator=[
             [["exits"],"exits",False],
             [["exit ","exit","x ","x"],"exits",True,
                 [
-                    [["add ","+ ","+"],"add",True,"2"],
-                    [["add"],"add",False,"2"],
+                    [["add ","add","+ ","+"],"add",False,"2"],
                     [["insert ","insert","i ","i"],"insert",True,"2"],
                     [["remove","rem","-"],"remove",False,"2w"],
                     [["swap ","swap","s ","s"],"swap",True,"2w"],
@@ -374,7 +382,7 @@ awaitInput_deabbreviator=[
             [["warps"],"warps",False],
             [["warp ","warp","w ","w"],"warps",True,
                 [
-                    [["add ","+ ","+"],"add",True,"1s"],
+                    [["add ","+ ","+"],"add",True,"1s"], #smf expects sublevel type also! please keep note (s is for sublevel, w is for warp num)
                     [["add"],"add",False,"1s"],
                     [["remove","rem","-"],"remove",False,"1sw"],
                     [["xpos ","xpos","x ","x"],"xpos",True,"1sw"],
@@ -392,8 +400,7 @@ awaitInput_deabbreviator=[
             [["entrances"],"entrances",False],
             [["entrance ","entrance","entr ","entr","n ","n"],"entrances",True,
                 [
-                    [["add ","+ ","+"],"add",True,"2"],
-                    [["add"],"add",False,"2"],
+                    [["add ","add","+ ","+"],"add",False,"2"],
                     [["insert ","insert","i ","i"],"insert",True,"2"],
                     [["remove","rem","-"],"remove",False,"2w"],
                     [["swap ","swap","s ","s"],"swap",True,"2w"],
@@ -406,8 +413,7 @@ awaitInput_deabbreviator=[
             [["exits"],"exits",False],
             [["exit ","exit","x ","x"],"exits",True,
                 [
-                    [["add ","+ ","+"],"add",True,"2"],
-                    [["add"],"add",False,"2"],
+                    [["add ","add","+ ","+"],"add",False,"2"],
                     [["insert ","insert","i ","i"],"insert",True,"2"],
                     [["remove","rem","-"],"remove",False,"2w"],
                     [["swap ","swap","s ","s"],"swap",True,"2w"],
@@ -471,19 +477,15 @@ def testInputMatch(command, toExecute):
                                                             subsubcommand=("", "", "")
                                                         # print(subsubcommand)
                                                         if m[2]: #values allowed?
-                                                            pass
-                                                            # print(f"m[2] '{subsubcommand[1]}'=='{m[0][n]}'? --- {subsubcommand[1]==m[0][n]}")
-                                                            # if subsubcommand[1]==m[0][n] and subsubcommand[0]=="":
-                                                                # if toExecute:
-                                                                   # awaitInput_commands[i[1]](k[1],subcommand[1],subsubcommand[1])
-                                                                # return True,i[0][j],True,True,subcommand[1],True,command[len(i[0][j])+len(k[0][l]):] #placeholder!!!!!!!!
+                                                            if subsubcommand[1]==m[0][n] and subsubcommand[0]=="":
+                                                                if toExecute:
+                                                                   awaitInput_commands[i[1]](k[1],m[1],subsubcommand[2])
+                                                                return True,i[0][j],True,True,subcommand[1],True,True,subsubcommand[1],False,subsubcommand[2] #placeholder!!!!!!!!
                                                         else:
                                                             if subsubcommand[1]==m[0][n] and subsubcommand[0]=="" and subsubcommand[2]=="" and not subsubcommand[1]=="":
-                                                                #print(subsubcommand)
-                                                                #print(f"'{subsubcommand[1]}'=='{m[0][n]}'? --- {subsubcommand[1]==m[0][n]}")
                                                                 if toExecute:
                                                                    awaitInput_commands[i[1]](k[1],m[1],"")
-                                                                return True,i[0][j],True,True,subcommand[1],True,True,command[len(i[0][j])+len(k[0][l]):]
+                                                                return True,i[0][j],True,True,subcommand[1],True,True,subsubcommand[1],False,""
                                             return True,i[0][j],True,True,subcommand[1],True,False,command[len(i[0][j])+len(k[0][l]):]
                                     else: #explicit match ("replace exits")
                                         if subcommand[1]==k[0][l] and subcommand[0]=="" and subcommand[2]=="":
@@ -584,7 +586,7 @@ def input(prefaceString, failSafeCommand):
                             if test[3]:
                                 if test[5]:
                                     if test[6]:
-                                        output+=colorScheme["subcommand"]+test[4]+colorScheme["section"]+test[7]
+                                        output+=colorScheme["subcommand"]+test[4]+colorScheme["section"]+test[7]+colorScheme["value"]+test[9]
                                     else:
                                         output+=colorScheme["subcommand"]+test[4]+colorScheme["typeinvalid"]+test[7]
                                 else:
@@ -2509,7 +2511,7 @@ def smf2WarpModifier(mode,xPos,yPos,warpType,extraVar):
                         extraVar=str(int(extraVar)+1)
 
 def replace(toModify, toModifySub, data):
-    print(toModify+","+toModifySub)
+    print(toModify+","+toModifySub+","+data)
     global game
     
     global level_name

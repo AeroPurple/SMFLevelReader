@@ -31,7 +31,7 @@ except Exception as e:
         "typeinvalid":""
     }
 
-date="27 Feb 2026"
+date="6 Mar 2026"
 
 versionNames=[0,"0.9","0.10 Beta"]
 

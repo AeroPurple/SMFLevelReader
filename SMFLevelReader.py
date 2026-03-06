@@ -137,10 +137,16 @@ def clear():
     else:
         os.system('clear')
     for i in range(screeny): # Windows Terminal force wipe
-        output=""
-        for j in range(screenx):
-            output+="█"
-        print(output)
+        try:
+            output=""
+            for j in range(screenx):
+                output+="█"
+            print(output)
+        except UnicodeEncodeError:
+            output=""
+            for j in range(screenx):
+                output+=" "
+            print(output)
     for i in range(screeny):
         output=""
         for j in range(screenx):
@@ -525,74 +531,81 @@ def input(prefaceString, failSafeCommand):
     
     command=""
     awaitInputMode=False
-    print(prefaceString, end='', flush=True)
-    
-    if prefaceString=="→ ":
+    if prefaceString=="→ " or prefaceString=="-> ":
         awaitInputMode=True
-    while True:
-        erased=0
-        event=keyboard.read_event()
-        if event.event_type==keyboard.KEY_DOWN and isFocusedConsole():
-            key=event.name
-            if key=="enter":
-                print("")
-                break
-            elif key=="esc" and not awaitInputMode:
-                print(strlib["exit_input"])
-                return failSafeCommand
-            elif key=="backspace":
-                erased=1
-                command=command[:-1]
-                current_command=len(usedCommands)
-            elif key=="space":
-                command+=" "
-                current_command=len(usedCommands)
-            elif key=="down" and awaitInputMode:
-                if len(usedCommands)>0:
-                    current_command=(current_command+1)%len(usedCommands)
-                    command=usedCommands[current_command]
-            elif key=="up" and awaitInputMode:
-                if len(usedCommands)>0:
-                    current_command=(current_command-1)%len(usedCommands)
-                    command=usedCommands[current_command]
-            elif len(key)<=1:
-                if key=="&" and (game=="smf2" or game=="smf2c"):
-                    command+="and"
-                elif key=="(" and (game=="smf" or game=="smfe"):
-                    command+="["
-                elif key==")" and (game=="smf" or game=="smfe"):
-                    command+="]"
-                else:
-                    command+=key
-                current_command=len(usedCommands)
-            output=""
-            if awaitInputMode:
-                test=testInputMatch(command, False)
-                if not test[0]:
-                    output+=colorScheme["typeinvalid"]+command
-                else:
-                    output+=colorScheme["command"]+test[1]
-                    if test[2]:
-                        if test[3]:
-                            if test[5]:
-                                if test[6]:
-                                    output+=colorScheme["subcommand"]+test[4]+colorScheme["section"]+test[7]
-                                else:
-                                    output+=colorScheme["subcommand"]+test[4]+colorScheme["typeinvalid"]+test[7]
-                            else:
-                                output+=colorScheme["subcommand"]+test[4]+colorScheme["value"]+test[6]
-                        else:
-                            output+=colorScheme["typeinvalid"]+test[4]
+    
+    if useANSI:
+        print(prefaceString, end='', flush=True)
+        
+        while True:
+            erased=0
+            event=keyboard.read_event()
+            if event.event_type==keyboard.KEY_DOWN and isFocusedConsole():
+                key=event.name
+                if key=="enter":
+                    print("")
+                    break
+                elif key=="esc" and not awaitInputMode:
+                    print(strlib["exit_input"])
+                    return failSafeCommand
+                elif key=="backspace":
+                    erased=1
+                    command=command[:-1]
+                    current_command=len(usedCommands)
+                elif key=="space":
+                    command+=" "
+                    current_command=len(usedCommands)
+                elif key=="down" and awaitInputMode:
+                    if len(usedCommands)>0:
+                        current_command=(current_command+1)%len(usedCommands)
+                        command=usedCommands[current_command]
+                elif key=="up" and awaitInputMode:
+                    if len(usedCommands)>0:
+                        current_command=(current_command-1)%len(usedCommands)
+                        command=usedCommands[current_command]
+                elif len(key)<=1:
+                    if key=="&" and (game=="smf2" or game=="smf2c"):
+                        command+="and"
+                    elif key=="(" and (game=="smf" or game=="smfe"):
+                        command+="["
+                    elif key==")" and (game=="smf" or game=="smfe"):
+                        command+="]"
                     else:
-                        output+=colorScheme["value"]+test[3]
-            else:
-                output+=colorScheme["value"]+command
-            output+=colorScheme["default"]
-            
-            print(u"\u001b["+str(math.ceil((len(prefaceString)+len(command)-1)/screenx))+"A")
-            print(" "*(screenx*(math.ceil((len(prefaceString)+len(command)-1)/screenx))), end='', flush=True)
-            print(u"\u001b["+str(math.ceil((len(prefaceString)+len(command)-1+erased*2)/screenx))+"A")
-            print("\r"+prefaceString+output, end='', flush=True)
+                        command+=key
+                    current_command=len(usedCommands)
+                output=""
+                if awaitInputMode:
+                    test=testInputMatch(command, False)
+                    if not test[0]:
+                        output+=colorScheme["typeinvalid"]+command
+                    else:
+                        output+=colorScheme["command"]+test[1]
+                        if test[2]:
+                            if test[3]:
+                                if test[5]:
+                                    if test[6]:
+                                        output+=colorScheme["subcommand"]+test[4]+colorScheme["section"]+test[7]
+                                    else:
+                                        output+=colorScheme["subcommand"]+test[4]+colorScheme["typeinvalid"]+test[7]
+                                else:
+                                    output+=colorScheme["subcommand"]+test[4]+colorScheme["value"]+test[6]
+                            else:
+                                output+=colorScheme["typeinvalid"]+test[4]
+                        else:
+                            output+=colorScheme["value"]+test[3]
+                else:
+                    output+=colorScheme["value"]+command
+                output+=colorScheme["default"]
+                
+                print(u"\u001b["+str(math.ceil((len(prefaceString)+len(command)-1)/screenx))+"A")
+                print(" "*(screenx*(math.ceil((len(prefaceString)+len(command)-1)/screenx))), end='', flush=True)
+                print(u"\u001b["+str(math.ceil((len(prefaceString)+len(command)-1+erased*2)/screenx))+"A")
+                print("\r"+prefaceString+output, end='', flush=True)
+    else:
+        command=builtins.input(prefaceString)
+        if not awaitInputMode and (command=="esc" or command=="no"):
+            print(strlib["exit_input"])
+            return failSafeCommand
     return command.replace("\\n","\n")
 
 firstRun=False
@@ -1994,9 +2007,12 @@ def exportAll(fileFormat, filePath):
         if fileFormat=="csv":
             output=""
             tiles_read=0
+            if not useANSI:
+                print(f"Processing {int((int(level_height)/20)*(int(level_width)/20))} tiles in Layer 1...")
             for i in layer_1:
                 for j in i:
-                    print("Processed "+str(tiles_read)+"/"+str(int((int(level_height)/20)*(int(level_width)/20)))+" Layer 1 tiles ("+str(math.floor(tiles_read/((int(level_height)/20)*(int(level_width)/20))*100))+"% done)", end='\r')
+                    if useANSI:
+                        print("Processed "+str(tiles_read)+"/"+str(int((int(level_height)/20)*(int(level_width)/20)))+" Layer 1 tiles ("+str(math.floor(tiles_read/((int(level_height)/20)*(int(level_width)/20))*100))+"% done)", end='\r')
                     output+=j+","
                     tiles_read+=1
                 if output[-1:]==",":
@@ -2011,9 +2027,12 @@ def exportAll(fileFormat, filePath):
                 print(strlib["te_file_busy"])
             output=""
             tiles_read=0
+            if not useANSI:
+                print(f"Processing {int((int(level_height)/20)*(int(level_width)/20))} tiles in Layer 2...")
             for i in layer_2:
                 for j in i:
-                    print("Processed "+str(tiles_read)+"/"+str(int((int(level_layer2_height)/20)*(int(level_layer2_width)/20)))+" Layer 2 tiles ("+str(math.floor(tiles_read/((int(level_layer2_height)/20)*(int(level_layer2_width)/20))*100))+"% done)", end='\r')
+                    if useANSI:
+                        print("Processed "+str(tiles_read)+"/"+str(int((int(level_height)/20)*(int(level_width)/20)))+" Layer 1 tiles ("+str(math.floor(tiles_read/((int(level_height)/20)*(int(level_width)/20))*100))+"% done)", end='\r')
                     output+=j+","
                     tiles_read+=1
                 if output[-1:]==",":
@@ -3523,7 +3542,10 @@ def awaitInput():
     global usedCommands
 
     while True:
-        command=input("→ ", "")
+        try:
+            command=input("→ ", "")
+        except UnicodeEncodeError:
+            command=input("-> ", "")
         
         usedCommands.append(command)
         if len(usedCommands)>10: ### MAKE THIS NUMBER MODIFIABLE VIA SETTINGS ###
@@ -3547,8 +3569,12 @@ if decorType!=0:
     title=" SMF Level Reader v"+versionNames[programVersion]+" "
     length=len(title)
     padding=(screenx-length)//2
-    centered_text=decorTypes[decorType]*padding+colorScheme["bold"]+title+colorScheme["default"]+decorTypes[decorType]*padding
-    print(centered_text)
+    try:
+        centered_text=decorTypes[decorType]*padding+colorScheme["bold"]+title+colorScheme["default"]+decorTypes[decorType]*padding
+        print(centered_text)
+    except UnicodeEncodeError:
+        centered_text="-"*padding+colorScheme["bold"]+title+colorScheme["default"]+"-"*padding
+        print(centered_text)
 else:
     print(colorScheme["bold"]+"SMF Level Reader v"+versionNames[programVersion]+colorScheme["default"])
 if colorschemeMissing:

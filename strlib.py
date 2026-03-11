@@ -27,6 +27,7 @@ except Exception as e:
         "subcommand":"",
         "section":"",
         "id":"",
+        "sublevel":"",
         "value":"",
         "typeinvalid":""
     }

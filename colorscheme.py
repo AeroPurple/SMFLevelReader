@@ -24,6 +24,7 @@ colorScheme={
     "subcommand":"",
     "section":"",
     "id":"",
+    "sublevel":"",
     "value":"",
     "typeinvalid":""
 }
@@ -69,6 +70,7 @@ def defineColors(useANSI):
         "subcommand":WHITE, # used to be DEFAULT+BOLD
         "section":DEFAULT,
         "id":GREEN,
+        "sublevel":DIM_GREEN,
         "value":CYAN,
         "typeinvalid":DIM_RED,
         "newline":MAGENTA

@@ -39,6 +39,7 @@ except:
         "subcommand":"",
         "section":"",
         "id":"",
+        "sublevel":"",
         "value":"",
         "typeinvalid":""
     }
@@ -285,12 +286,12 @@ awaitInput_deabbreviator=[
                     [["add"],"add",False,"1s"],
                     [["remove ","rem ","- ","-"],"remove",False,"1sw"],
                     [["remove","rem"],"remove",False,"1sw"],
+                    [["xposto ","xposto","xt ","xt"],"xposto",True,"1sw"],
+                    [["yposto ","yposto","yt ","yt"],"yposto",True,"1sw"],
                     [["xpos ","xpos","x ","x"],"xpos",True,"1sw"],
                     [["ypos ","ypos","y ","y"],"ypos",True,"1sw"],
                     [["sublevel ","sublvl ","s "],"sublvl",True,"1sw"],
                     [["sublevel","sublvl","s"],"sublvl",False,"1sw"],
-                    [["xposto ","xposto","xt ","xt"],"xposto",True,"1sw"],
-                    [["yposto ","yposto","yt ","yt"],"yposto",True,"1sw"],
                     [["direction ","dir ","d "],"dir",True,"1sw"],
                     [["direction","dir","d"],"dir",False,"1sw"],
                     [["animation ","anim ","type ","t "],"type",True,"1sw"],
@@ -303,7 +304,7 @@ awaitInput_deabbreviator=[
                     [["add ","add","+ ","+"],"add",False,"2"],
                     [["insert ","insert","i ","i"],"insert",True,"2"],
                     [["remove","rem","-"],"remove",False,"2w"],
-                    [["swap ","swap","s ","s"],"swap",True,"2w"],
+                    [["swap ","swap"],"swap",True,"2wd"],
                     [["xpos ","xpos","x ","x"],"xpos",True,"2w"],
                     [["ypos ","ypos","y ","y"],"ypos",True,"2w"],
                     [["state ","s ","s"],"state",True,"2w"],
@@ -316,7 +317,7 @@ awaitInput_deabbreviator=[
                     [["add ","add","+ ","+"],"add",False,"2"],
                     [["insert ","insert","i ","i"],"insert",True,"2"],
                     [["remove","rem","-"],"remove",False,"2w"],
-                    [["swap ","swap","s ","s"],"swap",True,"2w"],
+                    [["swap ","swap"],"swap",True,"2wd"],
                     [["xpos ","xpos","x ","x"],"xpos",True,"2w"],
                     [["ypos ","ypos","y ","y"],"ypos",True,"2w"],
                     [["linkto ","l ","l"],"linkto",True,"2w"],
@@ -385,12 +386,12 @@ awaitInput_deabbreviator=[
                     [["add ","+ ","+"],"add",True,"1s"], #smf expects sublevel type also! please keep note (s is for sublevel, w is for warp num)
                     [["add"],"add",False,"1s"],
                     [["remove","rem","-"],"remove",False,"1sw"],
+                    [["xposto ","xposto","xt ","xt"],"xposto",True,"1sw"],
+                    [["yposto ","yposto","yt ","yt"],"yposto",True,"1sw"],
                     [["xpos ","xpos","x ","x"],"xpos",True,"1sw"],
                     [["ypos ","ypos","y ","y"],"ypos",True,"1sw"],
                     [["sublevel ","sublvl ","s "],"sublvl",True,"1sw"],
                     [["sublevel","sublvl","s"],"sublvl",False,"1sw"],
-                    [["xposto ","xposto","xt ","xt"],"xposto",True,"1sw"],
-                    [["yposto ","yposto","yt ","yt"],"yposto",True,"1sw"],
                     [["direction ","dir ","d "],"dir",True,"1sw"],
                     [["direction","dir","d"],"dir",False,"1sw"],
                     [["animation ","anim ","type ","t "],"type",True,"1sw"],
@@ -403,7 +404,7 @@ awaitInput_deabbreviator=[
                     [["add ","add","+ ","+"],"add",False,"2"],
                     [["insert ","insert","i ","i"],"insert",True,"2"],
                     [["remove","rem","-"],"remove",False,"2w"],
-                    [["swap ","swap","s ","s"],"swap",True,"2w"],
+                    [["swap ","swap"],"swap",True,"2wd"],
                     [["xpos ","xpos","x ","x"],"xpos",True,"2w"],
                     [["ypos ","ypos","y ","y"],"ypos",True,"2w"],
                     [["state ","s ","s"],"state",True,"2w"],
@@ -416,7 +417,7 @@ awaitInput_deabbreviator=[
                     [["add ","add","+ ","+"],"add",False,"2"],
                     [["insert ","insert","i ","i"],"insert",True,"2"],
                     [["remove","rem","-"],"remove",False,"2w"],
-                    [["swap ","swap","s ","s"],"swap",True,"2w"],
+                    [["swap ","swap"],"swap",True,"2wd"],
                     [["xpos ","xpos","x ","x"],"xpos",True,"2w"],
                     [["ypos ","ypos","y ","y"],"ypos",True,"2w"],
                     [["linkto ","l ","l"],"linkto",True,"2w"],
@@ -446,6 +447,11 @@ awaitInput_deabbreviator=[
     [["help"],"help",False],
 ]
 
+sublevelNames=[
+    [["Level ","level ","lvl ","lvl","l ","l"],"Level"],
+    [["Bonus ","bonus ","bns ","bns","b ","b"],"Bonus"],
+]
+
 def testInputMatch(command, toExecute):
     for i in awaitInput_deabbreviator: # iterates through all entries of awaitInput_deabbreviator
         for j in range(len(i[0])): # iterates through all command versions (e.g. i[0])
@@ -469,7 +475,49 @@ def testInputMatch(command, toExecute):
                                             for m in k[3]:
                                                 for n in range(len(m[0])):
                                                     if "w" in m[3]: #needs warp ID first
-                                                        print("w command")
+                                                        #print("w command:"+str(subcommand))
+                                                        if m[0][n]!="":
+                                                            subsubcommand=subcommand[2].partition(m[0][n])
+                                                        else:
+                                                            subsubcommand=("", "", "")
+                                                        #print(subsubcommand)
+                                                        if "s" in m[3]: #sublevel required
+                                                            for o in sublevelNames:
+                                                                for p in range(len(o[0])):
+                                                                    sublevelcommand=subsubcommand[0].partition(o[0][p])
+                                                                    print(sublevelcommand)
+                                                                    if sublevelcommand[0]=="" and sublevelcommand[1]==o[0][p] and (sublevelcommand[2].isnumeric() or (sublevelcommand[2][:-1].isnumeric() and sublevelcommand[2][-1:]==" ")):
+                                                                        if m[2]: #values allowed?
+                                                                            if subsubcommand[1]==m[0][n]:
+                                                                                pass
+                                                                                # if toExecute:
+                                                                                   # stuff....
+                                                                                # ----------- this is pretty weird rn, fix later   vvvvvvv
+                                                                                #return True,i[0][j],True,True,subcommand[1],True,True,subsubcommand[1],True,sublevelcommand[1],subsubcommand[1],True,sublevelcommand[2]
+                                                                        else:
+                                                                            if subsubcommand[1]==m[0][n] and subsubcommand[2]=="" and subsubcommand[1]!="":
+                                                                                pass
+                                                                                # if toExecute:
+                                                                                   # stuff....
+                                                                                return True,i[0][j],True,True,subcommand[1],True,True,subsubcommand[1],True,sublevelcommand[1],"",True,sublevelcommand[2]
+                                                        else:
+                                                            if m[2]: #values allowed?
+                                                                if subsubcommand[1]==m[0][n] and (subsubcommand[0].isnumeric() or (subsubcommand[0][:-1].isnumeric() and subsubcommand[0][-1:]==" ")):
+                                                                    if "d" in m[3] and subsubcommand[2].isnumeric(): #value is a warp as well
+                                                                        # if toExecute:
+                                                                            # stuff....
+                                                                        return True,i[0][j],True,True,subcommand[1],True,True,subsubcommand[1],True,subsubcommand[0],subsubcommand[2],False,True
+                                                                    else:
+                                                                        # if toExecute:
+                                                                           # awaitInput_commands[i[1]](k[1],m[1],subsubcommand)
+                                                                        #print(subsubcommand)
+                                                                        return True,i[0][j],True,True,subcommand[1],True,True,subsubcommand[1],True,subsubcommand[0],subsubcommand[2],False,False
+                                                            else:
+                                                                if subsubcommand[1]==m[0][n] and (subsubcommand[0].isnumeric() or (subsubcommand[0][:-1].isnumeric() and subsubcommand[0][-1:]==" ")) and subsubcommand[2]=="" and subsubcommand[1]!="":
+                                                                    pass
+                                                                    # if toExecute:
+                                                                       # awaitInput_commands[i[1]](k[1],m[1],"")
+                                                                    return True,i[0][j],True,True,subcommand[1],True,True,subsubcommand[1],True,subsubcommand[0],"",False,False
                                                     else: #no checking for versions yet!!! the replace method still is in charge of this
                                                         if m[0][n]!="":
                                                             subsubcommand=subcommand[2].partition(m[0][n])
@@ -482,7 +530,7 @@ def testInputMatch(command, toExecute):
                                                                    awaitInput_commands[i[1]](k[1],m[1],subsubcommand[2])
                                                                 return True,i[0][j],True,True,subcommand[1],True,True,subsubcommand[1],False,subsubcommand[2] #placeholder!!!!!!!!
                                                         else:
-                                                            if subsubcommand[1]==m[0][n] and subsubcommand[0]=="" and subsubcommand[2]=="" and not subsubcommand[1]=="":
+                                                            if subsubcommand[1]==m[0][n] and subsubcommand[0]=="" and subsubcommand[2]=="" and subsubcommand[1]!="":
                                                                 if toExecute:
                                                                    awaitInput_commands[i[1]](k[1],m[1],"")
                                                                 return True,i[0][j],True,True,subcommand[1],True,True,subsubcommand[1],False,""
@@ -586,7 +634,16 @@ def input(prefaceString, failSafeCommand):
                             if test[3]:
                                 if test[5]:
                                     if test[6]:
-                                        output+=colorScheme["subcommand"]+test[4]+colorScheme["section"]+test[7]+colorScheme["value"]+test[9]
+                                        if test[8]:
+                                            if test[11]:
+                                                output+=colorScheme["subcommand"]+test[4]+colorScheme["sublevel"]+test[9]+colorScheme["id"]+test[12]+colorScheme["section"]+test[7]+colorScheme["value"]+test[10]
+                                            else:
+                                                if test[12]:
+                                                    output+=colorScheme["subcommand"]+test[4]+colorScheme["id"]+test[9]+colorScheme["section"]+test[7]+colorScheme["id"]+test[10]
+                                                else:
+                                                    output+=colorScheme["subcommand"]+test[4]+colorScheme["id"]+test[9]+colorScheme["section"]+test[7]+colorScheme["value"]+test[10]
+                                        else:
+                                            output+=colorScheme["subcommand"]+test[4]+colorScheme["section"]+test[7]+colorScheme["value"]+test[9]
                                     else:
                                         output+=colorScheme["subcommand"]+test[4]+colorScheme["typeinvalid"]+test[7]
                                 else:
@@ -778,11 +835,11 @@ def generalHelp(command):
         print("level | lvl | l\nbonus | bns | b\nlayer 1 | layer1 | l1\nlayer 2 | layer2 | l2")
     elif command=="settings":
         print(colorScheme["bold"]+"Settings Command"+colorScheme["default"])
-        print("This command opens a Curses interface that allows you to customize how the program functions and looks.")
+        print("This command opens a Curses interface that allows you to customize how the program functions and looks. Alternatively, an attribute can be added to this command to change values without using the interface.")
         print("\n"+colorScheme["bold"]+"Syntax"+colorScheme["default"])
-        print(colorScheme["command"]+"settings"+colorScheme["default"])
-        print(colorScheme["command"]+"set"+colorScheme["default"])
-        print(colorScheme["command"]+"s"+colorScheme["default"])
+        print(colorScheme["command"]+"settings "+colorScheme["subcommand"]+"[setting] "+colorScheme["value"]+"[new value] "+colorScheme["default"])
+        print(colorScheme["command"]+"set "+colorScheme["subcommand"]+"[setting] "+colorScheme["value"]+"[new value] "+colorScheme["default"])
+        print(colorScheme["command"]+"s "+colorScheme["subcommand"]+"[setting] "+colorScheme["value"]+"[new value] "+colorScheme["default"])
     elif command=="replace":
         print(colorScheme["bold"]+"Replace Command"+colorScheme["default"])
         print("This command replaces various variables in the current level.")

@@ -25,6 +25,10 @@ colorScheme={
     "section":"",
     "id":"",
     "sublevel":"",
+    "lo_x":"",
+    "hi_x":"",
+    "lo_y":"",
+    "hi_y":"",
     "value":"",
     "typeinvalid":""
 }
@@ -71,6 +75,10 @@ def defineColors(useANSI):
         "section":DEFAULT,
         "id":GREEN,
         "sublevel":DIM_GREEN,
+        "lo_x":DIM_BLUE,
+        "hi_x":BLUE,
+        "lo_y":DIM_MAGENTA,
+        "hi_y":MAGENTA,
         "value":CYAN,
         "typeinvalid":DIM_RED,
         "newline":MAGENTA

@@ -28,6 +28,10 @@ except Exception as e:
         "section":"",
         "id":"",
         "sublevel":"",
+        "lo_x":"",
+        "hi_x":"",
+        "lo_y":"",
+        "hi_y":"",
         "value":"",
         "typeinvalid":""
     }

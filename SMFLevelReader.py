@@ -40,6 +40,10 @@ except:
         "section":"",
         "id":"",
         "sublevel":"",
+        "lo_x":"",
+        "hi_x":"",
+        "lo_y":"",
+        "hi_y":"",
         "value":"",
         "typeinvalid":""
     }
@@ -163,7 +167,7 @@ awaitInput_commands={
     "export": lambda arg, value: exportAll(arg, value),
     "import": lambda arg, value: importTiles(arg, value),
     "settings": lambda arg, value: changeConfig(arg, value),
-    "replace": lambda arg1, arg2, arg3: replace(arg1, arg2, arg3),
+    "replace": lambda arg1, arg2, arg3, arg4, arg5: replace(arg1, arg2, arg3, arg4, arg5),
     "header": lambda arg: printInfo(),
     "help": lambda arg, dummy: generalHelp(arg),
     "exit": lambda dummy: (clear(),exit(0))[1],
@@ -282,7 +286,7 @@ awaitInput_deabbreviator=[
             [["warps"],"warps",False],
             [["warp ","warp","w ","w"],"warps",True,
                 [
-                    [["add ","+ ","+"],"add",True,"1s"], #smf expects sublevel type also! please keep note (s is for sublevel, w is for warp num)
+                    [["add ","+ ","+"],"add",False,"1s"], #smf expects sublevel type also! please keep note (s is for sublevel, w is for warp num)
                     [["add"],"add",False,"1s"],
                     [["remove ","rem ","- ","-"],"remove",False,"1sw"],
                     [["remove","rem"],"remove",False,"1sw"],
@@ -302,7 +306,7 @@ awaitInput_deabbreviator=[
             [["entrance ","entrance","entr ","entr","n ","n"],"entrances",True,
                 [
                     [["add ","add","+ ","+"],"add",False,"2"],
-                    [["insert ","insert","i ","i"],"insert",True,"2"],
+                    [["insert ","insert","i ","i"],"insert",True,"2"], # -------------------------- what is this doing exactly?
                     [["remove","rem","-"],"remove",False,"2w"],
                     [["swap ","swap"],"swap",True,"2wd"],
                     [["xpos ","xpos","x ","x"],"xpos",True,"2w"],
@@ -315,7 +319,7 @@ awaitInput_deabbreviator=[
             [["exit ","exit","x ","x"],"exits",True,
                 [
                     [["add ","add","+ ","+"],"add",False,"2"],
-                    [["insert ","insert","i ","i"],"insert",True,"2"],
+                    [["insert ","insert","i ","i"],"insert",True,"2"], # -------------------------- what is this doing exactly?
                     [["remove","rem","-"],"remove",False,"2w"],
                     [["swap ","swap"],"swap",True,"2wd"],
                     [["xpos ","xpos","x ","x"],"xpos",True,"2w"],
@@ -383,7 +387,7 @@ awaitInput_deabbreviator=[
             [["warps"],"warps",False],
             [["warp ","warp","w ","w"],"warps",True,
                 [
-                    [["add ","+ ","+"],"add",True,"1s"], #smf expects sublevel type also! please keep note (s is for sublevel, w is for warp num)
+                    [["add ","+ ","+"],"add",False,"1s"], #smf expects sublevel type also! please keep note (s is for sublevel, w is for warp num)
                     [["add"],"add",False,"1s"],
                     [["remove","rem","-"],"remove",False,"1sw"],
                     [["xposto ","xposto","xt ","xt"],"xposto",True,"1sw"],
@@ -402,7 +406,7 @@ awaitInput_deabbreviator=[
             [["entrance ","entrance","entr ","entr","n ","n"],"entrances",True,
                 [
                     [["add ","add","+ ","+"],"add",False,"2"],
-                    [["insert ","insert","i ","i"],"insert",True,"2"],
+                    [["insert ","insert","i ","i"],"insert",True,"2"], # -------------------------- what is this doing exactly?
                     [["remove","rem","-"],"remove",False,"2w"],
                     [["swap ","swap"],"swap",True,"2wd"],
                     [["xpos ","xpos","x ","x"],"xpos",True,"2w"],
@@ -415,7 +419,7 @@ awaitInput_deabbreviator=[
             [["exit ","exit","x ","x"],"exits",True,
                 [
                     [["add ","add","+ ","+"],"add",False,"2"],
-                    [["insert ","insert","i ","i"],"insert",True,"2"],
+                    [["insert ","insert","i ","i"],"insert",True,"2"], # -------------------------- what is this doing exactly?
                     [["remove","rem","-"],"remove",False,"2w"],
                     [["swap ","swap"],"swap",True,"2wd"],
                     [["xpos ","xpos","x ","x"],"xpos",True,"2w"],
@@ -485,38 +489,47 @@ def testInputMatch(command, toExecute):
                                                             for o in sublevelNames:
                                                                 for p in range(len(o[0])):
                                                                     sublevelcommand=subsubcommand[0].partition(o[0][p])
-                                                                    print(sublevelcommand)
                                                                     if sublevelcommand[0]=="" and sublevelcommand[1]==o[0][p] and (sublevelcommand[2].isnumeric() or (sublevelcommand[2][:-1].isnumeric() and sublevelcommand[2][-1:]==" ")):
                                                                         if m[2]: #values allowed?
                                                                             if subsubcommand[1]==m[0][n]:
-                                                                                pass
-                                                                                # if toExecute:
-                                                                                   # stuff....
-                                                                                # ----------- this is pretty weird rn, fix later   vvvvvvv
-                                                                                #return True,i[0][j],True,True,subcommand[1],True,True,subsubcommand[1],True,sublevelcommand[1],subsubcommand[1],True,sublevelcommand[2]
+                                                                                if toExecute:
+                                                                                    if sublevelcommand[2][:-1].isnumeric() and sublevelcommand[2][-1:]==" ":
+                                                                                        awaitInput_commands[i[1]](k[1],m[1],subsubcommand[2],o[1],sublevelcommand[2][:-1])
+                                                                                    else:
+                                                                                        awaitInput_commands[i[1]](k[1],m[1],subsubcommand[2],o[1],sublevelcommand[2])
+                                                                                return True,i[0][j],True,True,subcommand[1],True,True,subsubcommand[1],True,sublevelcommand[1],subsubcommand[2],True,sublevelcommand[2]
                                                                         else:
                                                                             if subsubcommand[1]==m[0][n] and subsubcommand[2]=="" and subsubcommand[1]!="":
-                                                                                pass
-                                                                                # if toExecute:
-                                                                                   # stuff....
+                                                                                if toExecute:
+                                                                                    if sublevelcommand[2][:-1].isnumeric() and sublevelcommand[2][-1:]==" ":
+                                                                                        awaitInput_commands[i[1]](k[1],m[1],subsubcommand[2],o[1],sublevelcommand[2][:-1])
+                                                                                    else:
+                                                                                        awaitInput_commands[i[1]](k[1],m[1],subsubcommand[2],o[1],sublevelcommand[2])
                                                                                 return True,i[0][j],True,True,subcommand[1],True,True,subsubcommand[1],True,sublevelcommand[1],"",True,sublevelcommand[2]
                                                         else:
                                                             if m[2]: #values allowed?
                                                                 if subsubcommand[1]==m[0][n] and (subsubcommand[0].isnumeric() or (subsubcommand[0][:-1].isnumeric() and subsubcommand[0][-1:]==" ")):
                                                                     if "d" in m[3] and subsubcommand[2].isnumeric(): #value is a warp as well
-                                                                        # if toExecute:
-                                                                            # stuff....
+                                                                        if toExecute:
+                                                                            if subsubcommand[0][:-1].isnumeric() and subsubcommand[0][-1:]==" ":
+                                                                                awaitInput_commands[i[1]](k[1],m[1],subsubcommand[2],"",subsubcommand[0][:-1])
+                                                                            else:
+                                                                                awaitInput_commands[i[1]](k[1],m[1],subsubcommand[2],"",subsubcommand[0])
                                                                         return True,i[0][j],True,True,subcommand[1],True,True,subsubcommand[1],True,subsubcommand[0],subsubcommand[2],False,True
                                                                     else:
-                                                                        # if toExecute:
-                                                                           # awaitInput_commands[i[1]](k[1],m[1],subsubcommand)
-                                                                        #print(subsubcommand)
+                                                                        if toExecute:
+                                                                            if subsubcommand[0][:-1].isnumeric() and subsubcommand[0][-1:]==" ":
+                                                                                awaitInput_commands[i[1]](k[1],m[1],subsubcommand[2],"",subsubcommand[0][:-1])
+                                                                            else:
+                                                                                awaitInput_commands[i[1]](k[1],m[1],subsubcommand[2],"",subsubcommand[0])
                                                                         return True,i[0][j],True,True,subcommand[1],True,True,subsubcommand[1],True,subsubcommand[0],subsubcommand[2],False,False
                                                             else:
                                                                 if subsubcommand[1]==m[0][n] and (subsubcommand[0].isnumeric() or (subsubcommand[0][:-1].isnumeric() and subsubcommand[0][-1:]==" ")) and subsubcommand[2]=="" and subsubcommand[1]!="":
-                                                                    pass
-                                                                    # if toExecute:
-                                                                       # awaitInput_commands[i[1]](k[1],m[1],"")
+                                                                    if toExecute:
+                                                                        if subsubcommand[0][:-1].isnumeric() and subsubcommand[0][-1:]==" ":
+                                                                            awaitInput_commands[i[1]](k[1],m[1],"","",subsubcommand[0][:-1])
+                                                                        else:
+                                                                            awaitInput_commands[i[1]](k[1],m[1],"","",subsubcommand[0])
                                                                     return True,i[0][j],True,True,subcommand[1],True,True,subsubcommand[1],True,subsubcommand[0],"",False,False
                                                     else: #no checking for versions yet!!! the replace method still is in charge of this
                                                         if m[0][n]!="":
@@ -527,18 +540,26 @@ def testInputMatch(command, toExecute):
                                                         if m[2]: #values allowed?
                                                             if subsubcommand[1]==m[0][n] and subsubcommand[0]=="":
                                                                 if toExecute:
-                                                                   awaitInput_commands[i[1]](k[1],m[1],subsubcommand[2])
-                                                                return True,i[0][j],True,True,subcommand[1],True,True,subsubcommand[1],False,subsubcommand[2] #placeholder!!!!!!!!
+                                                                   awaitInput_commands[i[1]](k[1],m[1],subsubcommand[2],"","")
+                                                                return True,i[0][j],True,True,subcommand[1],True,True,subsubcommand[1],False,subsubcommand[2],False
                                                         else:
-                                                            if subsubcommand[1]==m[0][n] and subsubcommand[0]=="" and subsubcommand[2]=="" and subsubcommand[1]!="":
-                                                                if toExecute:
-                                                                   awaitInput_commands[i[1]](k[1],m[1],"")
-                                                                return True,i[0][j],True,True,subcommand[1],True,True,subsubcommand[1],False,""
+                                                            if "s" in m[3]: #sublevel required
+                                                                for o in sublevelNames:
+                                                                    for p in range(len(o[0])):
+                                                                        if subsubcommand[0]==o[0][p] and subsubcommand[1]==m[0][n] and subsubcommand[2]=="" and subsubcommand[1]!="":
+                                                                            if toExecute:
+                                                                               awaitInput_commands[i[1]](k[1],m[1],"",o[1],"")
+                                                                            return True,i[0][j],True,True,subcommand[1],True,True,subsubcommand[1],False,"",True,subsubcommand[0]
+                                                            else:
+                                                                if subsubcommand[1]==m[0][n] and subsubcommand[0]=="" and subsubcommand[2]=="" and subsubcommand[1]!="":
+                                                                    if toExecute:
+                                                                       awaitInput_commands[i[1]](k[1],m[1],"","","")
+                                                                    return True,i[0][j],True,True,subcommand[1],True,True,subsubcommand[1],False,"",False
                                             return True,i[0][j],True,True,subcommand[1],True,False,command[len(i[0][j])+len(k[0][l]):]
                                     else: #explicit match ("replace exits")
                                         if subcommand[1]==k[0][l] and subcommand[0]=="" and subcommand[2]=="":
                                             if toExecute:
-                                                awaitInput_commands[i[1]](k[1],"","") # --------- is this supposed to be subcommand[2] as well? needs testing
+                                                awaitInput_commands[i[1]](k[1],"","","","")
                                             return True,i[0][j],True,True,subcommand[1],False,command[len(i[0][j])+len(k[0][l]):]
                                 else: #subsubcommand is a value
                                     if k[2]: #cropped match ("export txt ")
@@ -556,7 +577,7 @@ def testInputMatch(command, toExecute):
                                 try:
                                     awaitInput_commands[i[1]]("","")
                                 except:
-                                    awaitInput_commands[i[1]]("","","") # empty "replace " commands
+                                    awaitInput_commands[i[1]]("","","","","") # empty "replace " commands
                             return True,i[0][j],False,""
                         return True,i[0][j],True,False,command[len(i[0][j]):] #matched/not, command, has subcommand, matched/not subcommand, subcommand
                     else:
@@ -571,7 +592,7 @@ def testInputMatch(command, toExecute):
                             try:
                                 awaitInput_commands[i[1]]("","") # things like "export" - valid commands with two args in deabbreviator
                             except:
-                                awaitInput_commands[i[1]]("","","") # empty "replace" commands
+                                awaitInput_commands[i[1]]("","","","","") # empty "replace" commands
                     return True,i[0][j],False,"" # matched/not, command, is next part a command, dummy argument
     return False,command # matched/not, command
         
@@ -643,7 +664,10 @@ def input(prefaceString, failSafeCommand):
                                                 else:
                                                     output+=colorScheme["subcommand"]+test[4]+colorScheme["id"]+test[9]+colorScheme["section"]+test[7]+colorScheme["value"]+test[10]
                                         else:
-                                            output+=colorScheme["subcommand"]+test[4]+colorScheme["section"]+test[7]+colorScheme["value"]+test[9]
+                                            if test[10]:
+                                                output+=colorScheme["subcommand"]+test[4]+colorScheme["sublevel"]+test[11]+colorScheme["section"]+test[7]
+                                            else:
+                                                output+=colorScheme["subcommand"]+test[4]+colorScheme["section"]+test[7]+colorScheme["value"]+test[9]
                                     else:
                                         output+=colorScheme["subcommand"]+test[4]+colorScheme["typeinvalid"]+test[7]
                                 else:
@@ -807,74 +831,84 @@ def changeConfig(setting, value):
 def generalHelp(command):
     if command=="":
         print(colorScheme["bold"]+"SMF Level Reader v"+versionNames[programVersion]+"\nReleased on "+release_date+" by AeroPurple"+colorScheme["default"]+"\n")
-        print("Available commands:\n"+colorScheme["command"]+"open | o\nexport | exp | e\nimport | imp | i\nsettings | set | s\nreplace | rep | r\nheader | head | h\nhelp | ?\nexit | x"+colorScheme["default"])
-        print("\nType in "+colorScheme["command"]+"help"+colorScheme["default"]+" "+colorScheme["bold"]+"[command]"+colorScheme["default"]+" | "+colorScheme["command"]+"?"+colorScheme["default"]+" "+colorScheme["bold"]+"[command]"+colorScheme["default"]+" to learn more about how each command works.")
+        print(colorScheme["bold"]+"Available commands:\n"+colorScheme["default"]+colorScheme["command"]+"open | o\nexport | exp | e\nimport | imp | i\nsettings | set | s\nreplace | rep | r\nheader | head | h\nhelp | ?\nexit | x"+colorScheme["default"])
+        print("\nType in "+colorScheme["command"]+"help "+colorScheme["subcommand"]+"[command]"+colorScheme["default"]+" | "+colorScheme["command"]+"? "+colorScheme["subcommand"]+"[command]"+colorScheme["default"]+" to learn more about how each command works.")
     elif command=="open":
         print(colorScheme["bold"]+"Open Command"+colorScheme["default"])
         print("This command opens up a File Explorer dialogue and allows you to select a file (if the file is not specified). This file is then automatically parsed and can be edited.")
         print("\n"+colorScheme["bold"]+"Syntax"+colorScheme["default"])
         print(colorScheme["command"]+"open "+colorScheme["value"]+"[path]"+colorScheme["default"])
-        print(colorScheme["command"]+"o "+colorScheme["value"]+"[path]"+colorScheme["default"])
+        print(colorScheme["bold"]+"\nAliases"+colorScheme["default"])
+        print(colorScheme["command"]+"open | o"+colorScheme["default"])
     elif command=="export":
         print(colorScheme["bold"]+"Export Command"+colorScheme["default"])
         print("This command exports an opened Super Mario Flash level to your desired format, such as Comma Separated Values (can be edited in Excel), the original SMF text format, or an experimental text format that contains a visual representation of level tiles.")
         print("\n"+colorScheme["bold"]+"Syntax"+colorScheme["default"])
-        print(colorScheme["command"]+"export"+colorScheme["default"]+" "+colorScheme["bold"]+"[format] "+colorScheme["value"]+"[directory]"+colorScheme["default"])
-        print(colorScheme["command"]+"exp"+colorScheme["default"]+" "+colorScheme["bold"]+"[format] "+colorScheme["value"]+"[directory]"+colorScheme["default"])
-        print(colorScheme["command"]+"e"+colorScheme["default"]+" "+colorScheme["bold"]+"[format] "+colorScheme["value"]+"[directory]"+colorScheme["default"])
-        print("\n"+colorScheme["bold"]+"Accepted Values"+colorScheme["default"])
-        print("csv | txt | map")
+        print(colorScheme["command"]+"export"+colorScheme["default"]+" "+colorScheme["subcommand"]+"[format] "+colorScheme["value"]+"[directory]"+colorScheme["default"])
+        print(colorScheme["bold"]+"\nAliases"+colorScheme["default"])
+        print(colorScheme["command"]+"export | exp | e"+colorScheme["default"])
+        print("\n"+colorScheme["bold"]+"Formats"+colorScheme["default"])
+        print(colorScheme["subcommand"]+"csv | txt | map"+colorScheme["default"])
     elif command=="import":
         print(colorScheme["bold"]+"Import Command"+colorScheme["default"])
         print("This command replaces specified tiles with a Comma Seperated Values (CSV) file.")
         print("\n"+colorScheme["bold"]+"Syntax"+colorScheme["default"])
-        print(colorScheme["command"]+"import"+colorScheme["default"]+" "+colorScheme["bold"]+"[type of tile data] "+colorScheme["value"]+"[path]"+colorScheme["default"])
-        print(colorScheme["command"]+"imp"+colorScheme["default"]+" "+colorScheme["bold"]+"[type of tile data] "+colorScheme["value"]+"[path]"+colorScheme["default"])
-        print(colorScheme["command"]+"i"+colorScheme["default"]+" "+colorScheme["bold"]+"[type of tile data] "+colorScheme["value"]+"[path]"+colorScheme["default"])
-        print("\n"+colorScheme["bold"]+"Accepted Values"+colorScheme["default"])
-        print("level | lvl | l\nbonus | bns | b\nlayer 1 | layer1 | l1\nlayer 2 | layer2 | l2")
+        print(colorScheme["command"]+"import"+colorScheme["default"]+" "+colorScheme["subcommand"]+"[tile data plane] "+colorScheme["value"]+"[path]"+colorScheme["default"])
+        print(colorScheme["bold"]+"\nAliases"+colorScheme["default"])
+        print(colorScheme["command"]+"import | imp | i"+colorScheme["default"])
+        print("\n"+colorScheme["bold"]+"Tile planes"+colorScheme["default"])
+        print(colorScheme["subcommand"]+"level | lvl | l\nbonus | bns | b\nlayer 1 | layer1 | l1\nlayer 2 | layer2 | l2"+colorScheme["default"])
     elif command=="settings":
         print(colorScheme["bold"]+"Settings Command"+colorScheme["default"])
         print("This command opens a Curses interface that allows you to customize how the program functions and looks. Alternatively, an attribute can be added to this command to change values without using the interface.")
         print("\n"+colorScheme["bold"]+"Syntax"+colorScheme["default"])
-        print(colorScheme["command"]+"settings "+colorScheme["subcommand"]+"[setting] "+colorScheme["value"]+"[new value] "+colorScheme["default"])
-        print(colorScheme["command"]+"set "+colorScheme["subcommand"]+"[setting] "+colorScheme["value"]+"[new value] "+colorScheme["default"])
-        print(colorScheme["command"]+"s "+colorScheme["subcommand"]+"[setting] "+colorScheme["value"]+"[new value] "+colorScheme["default"])
+        print(colorScheme["command"]+"settings "+colorScheme["subcommand"]+"[variable] "+colorScheme["value"]+"[new value] "+colorScheme["default"])
+        print(colorScheme["bold"]+"\nAliases"+colorScheme["default"])
+        print(colorScheme["command"]+"settings | set | s"+colorScheme["default"])
+        print("\n"+colorScheme["bold"]+"Variables"+colorScheme["default"])
+        print(colorScheme["subcommand"]+"waittime | wait | delay | w\ndecortype | decor | d\nuseansi | ua"+colorScheme["default"])
     elif command=="replace":
         print(colorScheme["bold"]+"Replace Command"+colorScheme["default"])
         print("This command replaces various variables in the current level.")
         print("\n"+colorScheme["bold"]+"Syntax"+colorScheme["default"])
-        print(colorScheme["command"]+"replace"+colorScheme["default"]+" "+colorScheme["bold"]+"header [variable or command] [new value]"+colorScheme["default"])
-        print(colorScheme["command"]+"replace"+colorScheme["default"]+" "+colorScheme["bold"]+"warp/entrance/exit [warp sublevel and number or command] [variable or command] [new value]"+colorScheme["default"])
-        print(colorScheme["command"]+"replace"+colorScheme["default"]+" "+colorScheme["bold"]+"tiles [type of tile data] [tile selection] [new value]"+colorScheme["default"])
-        print(colorScheme["command"]+"rep"+colorScheme["default"]+" "+colorScheme["bold"]+"header [variable or command]  [new value]"+colorScheme["default"])
-        print(colorScheme["command"]+"rep"+colorScheme["default"]+" "+colorScheme["bold"]+"warp/entrance/exit [warp sublevel and number or command] [variable or command] [new value]"+colorScheme["default"])
-        print(colorScheme["command"]+"rep"+colorScheme["default"]+" "+colorScheme["bold"]+"tiles [type of tile data] [tile selection] [new value]"+colorScheme["default"])
-        print(colorScheme["command"]+"r"+colorScheme["default"]+" "+colorScheme["bold"]+"header [variable or command]  [new value]"+colorScheme["default"])
-        print(colorScheme["command"]+"r"+colorScheme["default"]+" "+colorScheme["bold"]+"warp/entrance/exit [warp sublevel and number or command] [variable or command] [new value]"+colorScheme["default"])
-        print(colorScheme["command"]+"r"+colorScheme["default"]+" "+colorScheme["bold"]+"tiles [type of tile data] [tile selection] [new value]"+colorScheme["default"])
-        time.sleep(1)
-        print("\n"+colorScheme["bold"]+"Accepted Values"+colorScheme["default"])
-        print("Data Groups:")
-        print("\theader | head | h\n\twarp | w\n\tentance | entr | n\n\texit | x\n\ttiles | t")
-        time.sleep(1)
-        print("\n"+colorScheme["bold"]+"Commands/Variables"+colorScheme["default"])
-        print("Header:\n\tname | n\n\tlevel width | lvlwidth | lvlw | lw\n\tlevel background | lvlbg | lb\n\tlevel music | lvlmus | lm\n\tbonus background | bnsbg | bb\n\tbonus music | bnsmus | bm\n\tstart x | startx | sx\n\tstart y | starty | sy\n\tstart sublevel | start at | startat | sa\n\tdescription | desc | d\n\tbackground | bg | b\n\tmusic | mus |m\n\tstartstate | powerup | p\n\turl1 | u1\n\turl2 | u2\n\tlayer priority 1 | lpri 1 | lp1\n\tlayer priority 2 | lpri 2 | lp2\n\tlayer2 xpos | layer2 x | l2x\n\tlayer2 ypos | layer2 y | l2y")
-        time.sleep(1)
-        print("Warps:\n\tadd | +\n\tremove | rem | -\n\txpos | x\n\typos | y\n\tsublevel | sublvl | s\n\txposto | xt\n\typosto | yt\n\tdirection | dir | d\n\tanimation | anim | type | t")
-        time.sleep(1)
-        print("Entrances/Exits:\n\tadd | +\n\tremove | rem | -\n\tswap | s\n\txpos | x\n\typos | y\n\ttype | t\n\tstate | s\n\tlinkto | l")
-        time.sleep(1)
-        print("Tile Ranges:\n\tThe colon signifies a range. As in, 90:100 would select 10 columns/rows.\n\tThe comma separates the X range/columns from the Y range/rows.\n\tThe space separates the tile selection from the specified replacement value.\n\tSome examples:\n\t'4:5,8:9 100' selects tiles from x4y8 to x5y9 and replaces them with tile ID 100.\n\t'4:5,8' selects tiles 4 through 5 in the 8th column.\n\t'4,8' selects tile in position x4y8.")
-        time.sleep(1)
+        print(colorScheme["command"]+"replace"+colorScheme["default"]+" "+colorScheme["subcommand"]+"header "+colorScheme["section"]+"[variable] "+colorScheme["value"]+"[new value]"+colorScheme["default"])
+        print(colorScheme["command"]+"replace"+colorScheme["default"]+" "+colorScheme["subcommand"]+"warp "+colorScheme["sublevel"]+"[sublevel] "+colorScheme["section"]+"[command]"+colorScheme["default"])
+        print(colorScheme["command"]+"replace"+colorScheme["default"]+" "+colorScheme["subcommand"]+"warp "+colorScheme["sublevel"]+"[sublevel] "+colorScheme["id"]+"[warp number] "+colorScheme["section"]+"[command]"+colorScheme["default"])
+        print(colorScheme["command"]+"replace"+colorScheme["default"]+" "+colorScheme["subcommand"]+"warp "+colorScheme["sublevel"]+"[sublevel] "+colorScheme["id"]+"[warp number] "+colorScheme["section"]+"[variable] "+colorScheme["value"]+"[new value]"+colorScheme["default"])
+        print(colorScheme["command"]+"replace"+colorScheme["default"]+" "+colorScheme["subcommand"]+"[entrance/exit] "+colorScheme["id"]+colorScheme["section"]+"[command]"+colorScheme["default"])
+        print(colorScheme["command"]+"replace"+colorScheme["default"]+" "+colorScheme["subcommand"]+"[entrance/exit] "+colorScheme["id"]+"[warp number] "+colorScheme["section"]+"[command]"+colorScheme["default"])
+        print(colorScheme["command"]+"replace"+colorScheme["default"]+" "+colorScheme["subcommand"]+"[entrance/exit] "+colorScheme["id"]+"[warp number] "+colorScheme["section"]+"[variable] "+colorScheme["value"]+"[new value]"+colorScheme["default"]+"/"+colorScheme["id"]+"[warp number] ")
+        print(colorScheme["command"]+"replace"+colorScheme["default"]+" "+colorScheme["subcommand"]+"tiles [type of tile data] [tile selection] [new value]"+colorScheme["default"])
+        print(colorScheme["bold"]+"\nAliases"+colorScheme["default"])
+        print(colorScheme["command"]+"replace | rep | r"+colorScheme["default"])
+        time.sleep(titleScreenWaitTime/1000*16)
+        print("\n"+colorScheme["bold"]+"Section Aliases"+colorScheme["default"])
+        print(colorScheme["subcommand"]+"\theader | head | h\n\twarp | w\n\tentance | entr | n\n\texit | x\n\ttiles | t"+colorScheme["default"])
+        time.sleep(titleScreenWaitTime/1000*16)
+        print("\n"+colorScheme["bold"]+"Variables"+colorScheme["default"])
+        print(colorScheme["subcommand"]+"Header"+colorScheme["default"])
+        print(colorScheme["section"]+"\tname | n\n\tlevel width | lvlwidth | lvlw | lw\n\tlevel background | lvlbg | lb\n\tlevel music | lvlmus | lm\n\tbonus background | bnsbg | bb\n\tbonus music | bnsmus | bm\n\tstart x | startx | sx\n\tstart y | starty | sy\n\tstart sublevel | start at | startat | sa\n\tdescription | desc | d\n\tbackground | bg | b\n\tmusic | mus |m\n\tstartstate | powerup | p\n\turl1 | u1\n\turl2 | u2\n\tlayer priority 1 | lpri 1 | lp1\n\tlayer priority 2 | lpri 2 | lp2\n\tlayer2 xpos | layer2 x | l2x\n\tlayer2 ypos | layer2 y | l2y"+colorScheme["default"])
+        print(colorScheme["subcommand"]+"Warps"+colorScheme["default"])
+        print(colorScheme["section"]+"\txpos | x\n\typos | y\n\tsublevel | sublvl | s\n\txposto | xt\n\typosto | yt\n\tdirection | dir | d\n\tanimation | anim | type | t"+colorScheme["default"])
+        print(colorScheme["subcommand"]+"Entrances/Exits"+colorScheme["default"])
+        print(colorScheme["section"]+"\txpos | x\n\typos | y\n\ttype | t\n\tstate | s\n\tlinkto | l"+colorScheme["default"])
+        time.sleep(titleScreenWaitTime/1000*16)
+        print("\n"+colorScheme["bold"]+"Commands"+colorScheme["default"])
+        print(colorScheme["subcommand"]+"Warps"+colorScheme["default"])
+        print(colorScheme["section"]+"\tadd | +\n\tremove | rem | - ("+colorScheme["id"]+"[warp] "+colorScheme["section"]+"[command]"+colorScheme["default"]+")")
+        print(colorScheme["subcommand"]+"Entrances/Exits"+colorScheme["default"])
+        print(colorScheme["section"]+"\tadd | +\n\tremove | rem | - ("+colorScheme["id"]+"[warp] "+colorScheme["section"]+"[command]"+colorScheme["default"]+")"+colorScheme["section"]+"\n\tswap ("+colorScheme["id"]+"[warp] "+colorScheme["section"]+"[command] "+colorScheme["id"]+"[warp]"+colorScheme["default"]+")")
+        print(colorScheme["subcommand"]+"Tile Ranges"+colorScheme["default"])
+        print("\tThe colon signifies a range. As in, "+colorScheme["lo_x"]+"90"+colorScheme["default"]+":"+colorScheme["hi_x"]+"100"+colorScheme["default"]+" would select 10 "+colorScheme["hi_x"]+"columns"+colorScheme["default"]+"/"+colorScheme["hi_y"]+"rows"+colorScheme["default"]+".\n\tThe comma separates the "+colorScheme["hi_x"]+"X range/columns"+colorScheme["default"]+" from the "+colorScheme["hi_y"]+"Y range/rows"+colorScheme["default"]+".\n\tSome examples:\n\t'"+colorScheme["lo_x"]+"4"+colorScheme["default"]+":"+colorScheme["hi_x"]+"5"+colorScheme["default"]+","+colorScheme["lo_y"]+"8"+colorScheme["default"]+":"+colorScheme["hi_y"]+"9 "+colorScheme["value"]+"241"+colorScheme["default"]+"' selects tiles from "+colorScheme["lo_x"]+"x4"+colorScheme["lo_y"]+"y8"+colorScheme["default"]+" to "+colorScheme["hi_x"]+"x5"+colorScheme["hi_y"]+"y9"+colorScheme["default"]+" and replaces them with tile ID "+colorScheme["value"]+"100"+colorScheme["default"]+".\n\t'"+colorScheme["lo_x"]+"4"+colorScheme["default"]+":"+colorScheme["hi_x"]+"5"+colorScheme["default"]+","+colorScheme["hi_y"]+"8"+colorScheme["default"]+"' selects tiles "+colorScheme["lo_x"]+"4"+colorScheme["default"]+" through "+colorScheme["hi_x"]+"5"+colorScheme["default"]+" in the "+colorScheme["hi_y"]+"8th"+colorScheme["default"]+" column.\n\t'"+colorScheme["hi_x"]+"4"+colorScheme["default"]+","+colorScheme["hi_y"]+"8"+colorScheme["default"]+"' selects tile in position "+colorScheme["hi_x"]+"x4"+colorScheme["hi_y"]+"y8"+colorScheme["default"]+".")
+        time.sleep(titleScreenWaitTime/1000*16)
         print("\n"+colorScheme["bold"]+"Examples"+colorScheme["default"])
-        print("replace header name Hi! -- this will replace the current level name with \"Hi!\".")
-        print("replace header music 5 -- this will replace the current level music with Underwater.")
-        print("replace warp level add -- this will add a new warp to the list of level warps.")
-        print("replace warp level 2 remove -- this will remove warp no.3 from the list of level warps.")
-        print("replace warp bonus 3 xpos -- this will changes bonus warp no.4's X position.")
-        print("replace entrance 5 swap 6 -- this will swap entrances ID 5 and ID 6.")
-        print("replace tiles layer1 0:10,0:10 241 -- this will replace a 10x10 square in the upper left corner of the level with coins.")
+        print(colorScheme["command"]+"replace "+colorScheme["subcommand"]+"header "+colorScheme["section"]+"name "+colorScheme["value"]+"Hi!"+colorScheme["default"]+" -- this will replace the current level "+colorScheme["section"]+"name"+colorScheme["default"]+" with \""+colorScheme["value"]+"Hi!"+colorScheme["default"]+"\".")
+        print(colorScheme["command"]+"replace "+colorScheme["subcommand"]+"header "+colorScheme["section"]+"music "+colorScheme["value"]+"5 "+colorScheme["default"]+"-- this will replace the current level "+colorScheme["section"]+"music"+colorScheme["default"]+" with "+colorScheme["value"]+"Underwater"+colorScheme["default"]+".")
+        print(colorScheme["command"]+"replace "+colorScheme["subcommand"]+"warp "+colorScheme["sublevel"]+"level "+colorScheme["section"]+"add"+colorScheme["default"]+" -- this will "+colorScheme["section"]+"add"+colorScheme["default"]+" a new warp to the list of "+colorScheme["sublevel"]+"level "+colorScheme["default"]+"warps.")
+        print(colorScheme["command"]+"replace "+colorScheme["subcommand"]+"warp "+colorScheme["sublevel"]+"level "+colorScheme["id"]+"2 "+colorScheme["section"]+"remove"+colorScheme["default"]+" -- this will "+colorScheme["section"]+"remove"+colorScheme["default"]+" warp no."+colorScheme["id"]+"3"+colorScheme["default"]+" from the list of "+colorScheme["sublevel"]+"level "+colorScheme["default"]+"warps."+colorScheme["default"])
+        print(colorScheme["command"]+"replace "+colorScheme["subcommand"]+"warp "+colorScheme["sublevel"]+"bonus "+colorScheme["id"]+"3 "+colorScheme["section"]+"xpos"+colorScheme["default"]+" -- this will changes "+colorScheme["sublevel"]+"bonus"+colorScheme["default"]+" warp no."+colorScheme["id"]+"4"+colorScheme["default"]+"'s "+colorScheme["section"]+"X position."+colorScheme["default"])
+        print(colorScheme["command"]+"replace "+colorScheme["subcommand"]+"entrance "+colorScheme["id"]+"5 "+colorScheme["section"]+"swap "+colorScheme["id"]+"6 "+colorScheme["default"]+"-- this will "+colorScheme["section"]+"swap"+colorScheme["default"]+" entrances ID "+colorScheme["id"]+"5"+colorScheme["default"]+" and ID "+colorScheme["id"]+"6"+colorScheme["default"]+".")
+        print(colorScheme["command"]+"replace "+colorScheme["subcommand"]+"tiles "+colorScheme["sublevel"]+"layer1 "+colorScheme["lo_x"]+"0"+colorScheme["default"]+":"+colorScheme["hi_x"]+"10"+colorScheme["default"]+","+colorScheme["lo_y"]+"0"+colorScheme["default"]+":"+colorScheme["hi_y"]+"10 "+colorScheme["value"]+"241"+colorScheme["default"]+" -- this will replace a 10x10 square in the upper left corner of the level with "+colorScheme["value"]+"coins"+colorScheme["default"]+".")
         print("\nIf no value is specified, like in 'replace header name', you will be prompted to assign a value.")
         print("If no variable is specified, like in 'replace header', a Curses user interface containing all of the variables for that data group will appear.")
     elif command=="header":
@@ -882,14 +916,15 @@ def generalHelp(command):
         print("This command will print formatted header data, similar to what happens when you open a file.")
         print("\n"+colorScheme["bold"]+"Syntax"+colorScheme["default"])
         print(colorScheme["command"]+"header"+colorScheme["default"])
-        print(colorScheme["command"]+"head"+colorScheme["default"])
-        print(colorScheme["command"]+"h"+colorScheme["default"])
+        print(colorScheme["bold"]+"\nAliases"+colorScheme["default"])
+        print(colorScheme["command"]+"header | head | h"+colorScheme["default"])
     elif command=="help":
         print(colorScheme["bold"]+"Help Command"+colorScheme["default"])
         print("This command prints useful info on how to use this program.")
         print("\n"+colorScheme["bold"]+"Syntax"+colorScheme["default"])
-        print(colorScheme["command"]+"help"+colorScheme["default"]+" "+colorScheme["bold"]+"[command]"+colorScheme["default"])
-        print(colorScheme["command"]+"?"+colorScheme["default"]+" "+colorScheme["bold"]+"[command]"+colorScheme["default"])
+        print(colorScheme["command"]+"help"+colorScheme["default"]+" "+colorScheme["subcommand"]+"[command]"+colorScheme["default"])
+        print(colorScheme["bold"]+"\nAliases"+colorScheme["default"])
+        print(colorScheme["command"]+"help | ?"+colorScheme["default"])
     elif command=="exit":
         print(colorScheme["bold"]+"Exit Command"+colorScheme["default"])
         print("This command exits this program.")
@@ -2567,9 +2602,9 @@ def smf2WarpModifier(mode,xPos,yPos,warpType,extraVar):
                     if int(extraVar)<len(all_entrances)-1:
                         extraVar=str(int(extraVar)+1)
 
-def replace(toModify, toModifySub, data):
-    print(toModify+","+toModifySub+","+data)
+def replace(toModify, toModifySub, data, sublevel, warpNum):
     global game
+    print(toModify+","+toModifySub+","+data+","+sublevel+","+warpNum+",")
     
     global level_name
     global level_background

@@ -51,7 +51,7 @@ except:
 try:
     from strlib import str as strlib
     from strlib import date as release_date
-    from strlib import smfe_background_names, smfe_music_names, smf2_background_names, smf2c_background_names, smf2c_music_names, smf2_powerup_names, smf2_entrance_types, smf2_entrance_powerups, smf2_exit_types, smf_tiles, smf2_tiles, versionNames
+    from strlib import smfe_background_names, smfe_music_names, smf2_background_names, smf2c_background_names, smf2c_music_names, smf2_powerup_names, smf2_entrance_types, smf2_entrance_powerups, smf2_exit_types, smf_tiles, smf2_tiles, versionNames, fancyVersion
 except:
     print("Critical Error: string library not found")
     exit(1)
@@ -555,7 +555,9 @@ def testInputMatch(command, toExecute):
                                                                     if toExecute:
                                                                        awaitInput_commands[i[1]](k[1],m[1],"","","")
                                                                     return True,i[0][j],True,True,subcommand[1],True,True,subsubcommand[1],False,"",False
-                                            return True,i[0][j],True,True,subcommand[1],True,False,command[len(i[0][j])+len(k[0][l]):]
+                                            if toExecute:
+                                                awaitInput_commands[i[1]](k[1],"","","","")
+                                            return True,i[0][j],True,True,subcommand[1],True,False,command[len(i[0][j])+len(k[0][l]):] # -------------------------------------------------------------------- WHAT'S GOING ON HERE
                                     else: #explicit match ("replace exits")
                                         if subcommand[1]==k[0][l] and subcommand[0]=="" and subcommand[2]=="":
                                             if toExecute:
@@ -830,7 +832,8 @@ def changeConfig(setting, value):
 
 def generalHelp(command):
     if command=="":
-        print(colorScheme["bold"]+"SMF Level Reader v"+versionNames[programVersion]+"\nReleased on "+release_date+" by AeroPurple"+colorScheme["default"]+"\n")
+        print(colorScheme["bold"]+"SMF Level Reader v"+versionNames[programVersion]+"\nReleased on "+release_date+" by AeroPurple"+colorScheme["default"])
+        print(fancyVersion+"\n")
         print(colorScheme["bold"]+"Available commands:\n"+colorScheme["default"]+colorScheme["command"]+"open | o\nexport | exp | e\nimport | imp | i\nsettings | set | s\nreplace | rep | r\nheader | head | h\nhelp | ?\nexit | x"+colorScheme["default"])
         print("\nType in "+colorScheme["command"]+"help "+colorScheme["subcommand"]+"[command]"+colorScheme["default"]+" | "+colorScheme["command"]+"? "+colorScheme["subcommand"]+"[command]"+colorScheme["default"]+" to learn more about how each command works.")
     elif command=="open":
@@ -2480,7 +2483,11 @@ def smf2WarpModifier(mode,xPos,yPos,warpType,extraVar):
         console=curses.initscr()
     except:
         print(strlib["err_curses_load"])
-        return
+        print(f"Edited {mode} item.")
+        if mode=="Exits":
+            return [xPos,yPos,warpType,extraVar]
+        else:
+            return [warpType,xPos,yPos,extraVar]
     curses.noecho()
     curses.cbreak()
     console.keypad(True)
@@ -2535,14 +2542,14 @@ def smf2WarpModifier(mode,xPos,yPos,warpType,extraVar):
             else:
                 if current_item==4:
                     curses.endwin()
-                    print("Exited "+mode.lower()+" editor.")
+                    print(f"Exited {mode.lower()} editor.")
                     if mode=="Exits":
                         return old_data
                     else:
                         return [old_data[2],old_data[0],old_data[1],old_data[3]]
                 elif current_item==5:
                     curses.endwin()
-                    print("Exited "+mode.lower()+" editor.")
+                    print(f"Exited {mode.lower()} editor.")
                     if mode=="Exits":
                         return [xPos,yPos,warpType,extraVar]
                     else:
@@ -3200,7 +3207,7 @@ def replace(toModify, toModifySub, data, sublevel, warpNum):
                                     if data!="":
                                         modified[1]=data
                                     else:
-                                        modified[1]=input("Change xPos of warp from "+modified[1]+" to: ")
+                                        modified[1]=input("Change xPos of warp from "+modified[1]+" to: ", modified[1])
                                     print("Successfully changed xPos of warp to "+modified[1])
                                 elif game=="smf2" or game=="smf2c":
                                     print(colorScheme["typeerror"]+"Warps are an SMF-only property. Please refer to Entrances or Exits."+colorScheme["default"])
@@ -3209,7 +3216,7 @@ def replace(toModify, toModifySub, data, sublevel, warpNum):
                                     if data!="":
                                         modified[0]=data
                                     else:
-                                        modified[0]=input("Change yPos of warp from "+modified[0]+" to: ")
+                                        modified[0]=input("Change yPos of warp from "+modified[0]+" to: ", modified[0])
                                     print("Successfully changed yPos of warp to "+modified[0])
                                 elif game=="smf2" or game=="smf2c":
                                     print(colorScheme["typeerror"]+"Warps are an SMF-only property. Please refer to Entrances or Exits."+colorScheme["default"])
@@ -3218,7 +3225,7 @@ def replace(toModify, toModifySub, data, sublevel, warpNum):
                                     if data!="":
                                         modified[3]=data
                                     else:
-                                        modified[3]=input("Change xPos of warp's exit from "+modified[3]+" to: ")
+                                        modified[3]=input("Change xPos of warp's exit from "+modified[3]+" to: ", modified[3])
                                     print("Successfully changed xPos of warp's exit to "+modified[3])
                                 elif game=="smf2" or game=="smf2c":
                                     print(colorScheme["typeerror"]+"Warps are an SMF-only property. Please refer to Entrances or Exits."+colorScheme["default"])
@@ -3227,7 +3234,7 @@ def replace(toModify, toModifySub, data, sublevel, warpNum):
                                     if data!="":
                                         modified[4]=data
                                     else:
-                                        modified[4]=input("Change yPos of warp's exit from "+modified[4]+" to: ")
+                                        modified[4]=input("Change yPos of warp's exit from "+modified[4]+" to: ", modified[4])
                                     print("Successfully changed yPos of warp's exit to "+modified[4])
                                 elif game=="smf2" or game=="smf2c":
                                     print(colorScheme["typeerror"]+"Warps are an SMF-only property. Please refer to Entrances or Exits."+colorScheme["default"])
@@ -3241,7 +3248,7 @@ def replace(toModify, toModifySub, data, sublevel, warpNum):
                                         else:
                                             modified[2]=data
                                     else:
-                                        modified[2]=input("Change sublevel of warp from "+modified[2]+" to: ")
+                                        modified[2]=input("Change sublevel of warp from "+modified[2]+" to: ", modified[2])
                                     print("Successfully changed sublevel of warp to "+modified[2])
                                 elif game=="smf2" or game=="smf2c":
                                     print(colorScheme["typeerror"]+"Warps are an SMF-only property. Please refer to Entrances or Exits."+colorScheme["default"])
@@ -3250,7 +3257,7 @@ def replace(toModify, toModifySub, data, sublevel, warpNum):
                                     if data!="":
                                         modified[5]=data
                                     else:
-                                        modified[5]=input("Change direction of warp from "+modified[5]+" to: ")
+                                        modified[5]=input("Change direction of warp from "+modified[5]+" to: ", modified[5])
                                     print("Successfully changed direction of warp to "+modified[5])
                                 elif game=="smf2" or game=="smf2c":
                                     print(colorScheme["typeerror"]+"Warps are an SMF-only property. Please refer to Entrances or Exits."+colorScheme["default"])
@@ -3259,7 +3266,7 @@ def replace(toModify, toModifySub, data, sublevel, warpNum):
                                     if data!="":
                                         modified[6]=data
                                     else:
-                                        modified[6]=input("Change animation of warp from "+modified[6]+" to: ")
+                                        modified[6]=input("Change animation of warp from "+modified[6]+" to: ", modified[6])
                                     print("Successfully changed animation of warp to "+modified[6])
                                 elif game=="smf2" or game=="smf2c":
                                     print(colorScheme["typeerror"]+"Warps are an SMF-only property. Please refer to Entrances or Exits."+colorScheme["default"])
@@ -3281,25 +3288,25 @@ def replace(toModify, toModifySub, data, sublevel, warpNum):
                                     if data!="":
                                         modified[1]=data
                                     else:
-                                        modified[1]=input("Change xPos of warp from "+modified[1]+" to: ")
+                                        modified[1]=input("Change xPos of warp from "+modified[1]+" to: ", modified[1])
                                     print("Successfully changed xPos of warp to "+modified[1])
                                 elif toModifySub=="ypos":
                                     if data!="":
                                         modified[0]=data
                                     else:
-                                        modified[0]=input("Change yPos of warp from "+modified[0]+" to: ")
+                                        modified[0]=input("Change yPos of warp from "+modified[0]+" to: ", modified[0])
                                     print("Successfully changed yPos of warp to "+modified[0])
                                 elif toModifySub=="xposto":
                                     if data!="":
                                         modified[3]=data
                                     else:
-                                        modified[3]=input("Change xPos of warp's exit from "+modified[3]+" to: ")
+                                        modified[3]=input("Change xPos of warp's exit from "+modified[3]+" to: ", modified[3])
                                     print("Successfully changed xPos of warp's exit to "+modified[3])
                                 elif toModifySub=="yposto":
                                     if data!="":
                                         modified[4]=data
                                     else:
-                                        modified[4]=input("Change yPos of warp's exit from "+modified[4]+" to: ")
+                                        modified[4]=input("Change yPos of warp's exit from "+modified[4]+" to: ", modified[4])
                                     print("Successfully changed yPos of warp's exit to "+modified[4])
                                 elif toModifySub=="sublvl":
                                     if data!="":
@@ -3310,19 +3317,19 @@ def replace(toModify, toModifySub, data, sublevel, warpNum):
                                         else:
                                             modified[2]=data
                                     else:
-                                        modified[2]=input("Change sublevel of warp from "+modified[2]+" to: ")
+                                        modified[2]=input("Change sublevel of warp from "+modified[2]+" to: ", modified[2])
                                     print("Successfully changed sublevel of warp to "+modified[2])
                                 elif toModifySub=="dir":
                                     if data!="":
                                         modified[5]=data
                                     else:
-                                        modified[5]=input("Change direction of warp from "+modified[5]+" to: ")
+                                        modified[5]=input("Change direction of warp from "+modified[5]+" to: ", modified[5])
                                     print("Successfully changed direction of warp to "+modified[5])
                                 elif toModifySub=="type":
                                     if data!="":
                                         modified[6]=data
                                     else:
-                                        modified[6]=input("Change animation of warp from "+modified[6]+" to: ")
+                                        modified[6]=input("Change animation of warp from "+modified[6]+" to: ", modified[6])
                                     print("Successfully changed animation of warp to "+modified[6])
                                 else:
                                     modified=smfWarpModifier(modified[0],modified[1],modified[2],modified[3],modified[4],modified[5],modified[6])
@@ -3345,52 +3352,54 @@ def replace(toModify, toModifySub, data, sublevel, warpNum):
                         if toModifySub=="remove":
                             all_entrances.pop(int(warpNum)-1)
                             print("Removed Entrance "+str(int(warpNum)-1)+".")
-                        elif toModifySub=="swap":
-                            if data=="":
-                                data=input("Swap Entrance ID "+warpNum+" with Entrance ID: ")
-                            try:
-                                if int(data)>len(all_entrances):
-                                    print(colorScheme["typeerror"]+"Entrance number too high!"+colorScheme["default"])
-                                else:
-                                    modified2=list(all_entrances[int(data)-1])
-                                    all_entrances[int(data)-1]=tuple(modified)
-                                    modified=modified2
-                                    print("Successfully swapped Entrance "+warpNum+" and Entrance "+data)
-                            except:
-                                print(colorScheme["typeerror"]+"Entrance number not an integer!"+colorScheme["default"])
-                        elif toModifySub=="xpos":
-                            if data!="":
-                                modified[1]=data
-                            else:
-                                modified[1]=input("Change xPos of entrance from "+modified[1]+" to: ")
-                            print("Successfully changed xPos of entrance to "+modified[1])
-                        elif toModifySub=="ypos":
-                            if data!="":
-                                modified[2]=data
-                            else:
-                                modified[2]=input("Change yPos of entrance from "+modified[2]+" to: ")
-                            print("Successfully changed yPos of entrance to "+modified[2])
-                        elif toModifySub=="type":
-                            if data!="":
-                                modified[0]=data
-                            else:
-                                modified[0]=input("Change type of entrance from "+modified[0]+" to: ")
-                            try:
-                                print("Successfully changed type of entrance to "+modified[0]+" ("+smf2_entrance_types[modified[0]]+")")
-                            except:
-                                print("Successfully changed type of entrance to "+modified[0]+" ("+smf2_entrance_types[9]+")")
-                        elif toModifySub=="state":
-                            if data!="":
-                                modified[3]=data
-                            else:
-                                modified[3]=input("Change entrance state from "+modified[3]+" to: ")
-                            try:
-                                print("Successfully changed entrance state to "+modified[3]+" ("+smf2_entrance_powerups[modified[3]]+")")
-                            except:
-                                print("Successfully changed entrance state to "+modified[3]+" ("+smf2_entrance_powerups[17]+")")
                         else:
-                            modified=smf2WarpModifier("Entrances",modified[1],modified[2],modified[0],modified[3])
-                        all_entrances[int(warpNum)-1]=tuple(modified)
+                            if toModifySub=="swap":
+                                if data=="":
+                                    data=input("Swap Entrance ID "+warpNum+" with Entrance ID: ", False)
+                                try:
+                                    if data!=False:
+                                        if int(data)>len(all_entrances):
+                                            print(colorScheme["typeerror"]+"Entrance number too high!"+colorScheme["default"])
+                                        else:
+                                            modified2=list(all_entrances[int(data)-1])
+                                            all_entrances[int(data)-1]=tuple(modified)
+                                            modified=modified2
+                                            print("Successfully swapped Entrance "+warpNum+" and Entrance "+data)
+                                except:
+                                    print(colorScheme["typeerror"]+"Entrance number not an integer!"+colorScheme["default"])
+                            elif toModifySub=="xpos":
+                                if data!="":
+                                    modified[1]=data
+                                else:
+                                    modified[1]=input("Change xPos of entrance from "+modified[1]+" to: ", modified[1])
+                                print("Successfully changed xPos of entrance to "+modified[1])
+                            elif toModifySub=="ypos":
+                                if data!="":
+                                    modified[2]=data
+                                else:
+                                    modified[2]=input("Change yPos of entrance from "+modified[2]+" to: ", modified[2])
+                                print("Successfully changed yPos of entrance to "+modified[2])
+                            elif toModifySub=="type":
+                                if data!="":
+                                    modified[0]=data
+                                else:
+                                    modified[0]=input("Change type of entrance from "+modified[0]+" to: ", modified[0])
+                                try:
+                                    print("Successfully changed type of entrance to "+modified[0]+" ("+smf2_entrance_types[modified[0]]+")")
+                                except:
+                                    print("Successfully changed type of entrance to "+modified[0]+" ("+smf2_entrance_types[9]+")")
+                            elif toModifySub=="state":
+                                if data!="":
+                                    modified[3]=data
+                                else:
+                                    modified[3]=input("Change entrance state from "+modified[3]+" to: ", modified[3])
+                                try:
+                                    print("Successfully changed entrance state to "+modified[3]+" ("+smf2_entrance_powerups[modified[3]]+")")
+                                except:
+                                    print("Successfully changed entrance state to "+modified[3]+" ("+smf2_entrance_powerups[17]+")")
+                            else:
+                                modified=smf2WarpModifier("Entrances",modified[1],modified[2],modified[0],modified[3])
+                            all_entrances[int(warpNum)-1]=tuple(modified)
             elif game=="smf" or game=="smfe":
                 print(colorScheme["typeerror"]+"Entrances are an SMF2-only property. Please refer to Warps."+colorScheme["default"])
         elif toModify=="exits":
@@ -3411,19 +3420,19 @@ def replace(toModify, toModifySub, data, sublevel, warpNum):
                             if data!="":
                                 modified[0]=data
                             else:
-                                modified[0]=input("Change xPos of exit from "+modified[0]+" to: ")
+                                modified[0]=input("Change xPos of exit from "+modified[0]+" to: ", modified[0])
                             print("Successfully changed xPos of exit to "+modified[0])
                         elif toModifySub=="ypos":
                             if data!="":
                                 modified[1]=data
                             else:
-                                modified[1]=input("Change yPos of exit from "+modified[1]+" to: ")
+                                modified[1]=input("Change yPos of exit from "+modified[1]+" to: ", modified[1])
                             print("Successfully changed yPos of exit to "+modified[1])
                         elif toModifySub=="type":
                             if data!="":
                                 modified[2]=data
                             else:
-                                modified[2]=input("Change type of exit from "+modified[2]+" to: ")
+                                modified[2]=input("Change type of exit from "+modified[2]+" to: ", modified[2])
                             try:
                                 print("Successfully changed type of exit to "+modified[2]+" ("+smf2_exit_types[modified[2]]+")")
                             except:
@@ -3432,7 +3441,7 @@ def replace(toModify, toModifySub, data, sublevel, warpNum):
                             if data!="":
                                 modified[3]=data
                             else:
-                                modified[3]=input("Change exit's linked entrance from "+modified[3]+" to: ")
+                                modified[3]=input("Change exit's linked entrance from "+modified[3]+" to: ", modified[3])
                             print("Successfully changed exit's linked entrance to "+modified[3])
                         else:
                             modified=smf2WarpModifier("Exits",modified[0],modified[1],modified[2],modified[3])
@@ -3615,7 +3624,9 @@ def replace(toModify, toModifySub, data, sublevel, warpNum):
                 if loopCount==0:
                     print(output)
                     if tileReplacerValues[4]=="":
-                        tileReplacerValues[4]=input("Replace this selection with tile ID: ")
+                        tileReplacerValues[4]=input("Replace this selection with tile ID: ", False)
+                    if tileReplacerValues[4]==False:
+                        return
                 else:
                     try:
                         if game=="smf" or game=="smfe":

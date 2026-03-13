@@ -36,9 +36,74 @@ except Exception as e:
         "typeinvalid":""
     }
 
-date="6 Mar 2026"
+date="13 Mar 2026"
 
 versionNames=[0,"0.9","0.10 Beta"]
+fancyVersion=(
+ f"{colorscheme.ANSICodes[useANSI][19]}            ╓─╖   ╖ ╓─╖{colorScheme['default']}\n"
+ f"         ▌▐ {colorscheme.ANSICodes[useANSI][19]}║ ║   ║ ║ ║{colorScheme['default']}\n"
+f"         \\/ {colorscheme.ANSICodes[useANSI][19]}╙─╜ . ╨ ╙─╜{colorScheme['default']}\n"
+                                                                                                  "\n"
+f"{colorscheme.ANSICodes[useANSI][19]}▐▐ " # left quote
+f"{colorscheme.ANSICodes[useANSI][13]}██{colorscheme.ANSICodes[useANSI][5]}┐ "  # P row 1
+f"{colorscheme.ANSICodes[useANSI][15]} █{colorscheme.ANSICodes[useANSI][7]}┐ "  # A row 1
+f"{colorscheme.ANSICodes[useANSI][14]}█{colorscheme.ANSICodes[useANSI][6]}┐  "  # L row 1
+f"{colorscheme.ANSICodes[useANSI][18]}███{colorscheme.ANSICodes[useANSI][10]}┐" # E row 1
+f"{colorscheme.ANSICodes[useANSI][16]}███{colorscheme.ANSICodes[useANSI][8]}┐"  # T row 1
+f"{colorscheme.ANSICodes[useANSI][17]}███{colorscheme.ANSICodes[useANSI][9]}┐"  # T row 1
+f"{colorscheme.ANSICodes[useANSI][13]}███{colorscheme.ANSICodes[useANSI][5]}┐" # E row 1
+f"{colorscheme.ANSICodes[useANSI][19]}▌▌\n" # right quote
+
+f"   {colorscheme.ANSICodes[useANSI][13]}█{colorscheme.ANSICodes[useANSI][5]}┌{colorscheme.ANSICodes[useANSI][13]}█{colorscheme.ANSICodes[useANSI][5]}┐" # P row 2
+f"{colorscheme.ANSICodes[useANSI][15]}█{colorscheme.ANSICodes[useANSI][7]}┼{colorscheme.ANSICodes[useANSI][15]}█{colorscheme.ANSICodes[useANSI][7]}┐"    # A row 2
+f"{colorscheme.ANSICodes[useANSI][14]}█{colorscheme.ANSICodes[useANSI][6]}│  "                                                                           # L row 2
+f"{colorscheme.ANSICodes[useANSI][18]}█{colorscheme.ANSICodes[useANSI][10]}┌─┘ "                                                                         # E row 2
+f"{colorscheme.ANSICodes[useANSI][16]}█{colorscheme.ANSICodes[useANSI][8]}┌┘ "                                                                           # T row 2
+f"{colorscheme.ANSICodes[useANSI][17]}█{colorscheme.ANSICodes[useANSI][9]}┌┘"                                                                            # T row 2
+f"{colorscheme.ANSICodes[useANSI][13]}█{colorscheme.ANSICodes[useANSI][5]}┌─┘\n"                                                                         # E row 2
+
+f"   {colorscheme.ANSICodes[useANSI][13]}█{colorscheme.ANSICodes[useANSI][5]}│{colorscheme.ANSICodes[useANSI][13]}█{colorscheme.ANSICodes[useANSI][5]}│" # P row 3
+f"{colorscheme.ANSICodes[useANSI][15]}█{colorscheme.ANSICodes[useANSI][7]}│{colorscheme.ANSICodes[useANSI][15]}█{colorscheme.ANSICodes[useANSI][7]}│"    # A row 3
+f"{colorscheme.ANSICodes[useANSI][14]}█{colorscheme.ANSICodes[useANSI][6]}│  "                                                                           # L row 3
+f"{colorscheme.ANSICodes[useANSI][18]}█{colorscheme.ANSICodes[useANSI][10]}│   "                                                                         # E row 3
+f"{colorscheme.ANSICodes[useANSI][16]}█{colorscheme.ANSICodes[useANSI][8]}│  "                                                                           # T row 3
+f"{colorscheme.ANSICodes[useANSI][17]}█{colorscheme.ANSICodes[useANSI][9]}│ "                                                                            # T row 3
+f"{colorscheme.ANSICodes[useANSI][13]}█{colorscheme.ANSICodes[useANSI][5]}│\n"                                                                         # E row 3
+
+f"   {colorscheme.ANSICodes[useANSI][13]}██{colorscheme.ANSICodes[useANSI][5]}┌┘" # P row 4
+f"{colorscheme.ANSICodes[useANSI][15]}███{colorscheme.ANSICodes[useANSI][7]}│"    # A row 4
+f"{colorscheme.ANSICodes[useANSI][14]}█{colorscheme.ANSICodes[useANSI][6]}│  "    # L row 4
+f"{colorscheme.ANSICodes[useANSI][18]}██{colorscheme.ANSICodes[useANSI][10]}┐  "  # E row 4
+f"{colorscheme.ANSICodes[useANSI][16]}█{colorscheme.ANSICodes[useANSI][8]}│  "    # T row 4
+f"{colorscheme.ANSICodes[useANSI][17]}█{colorscheme.ANSICodes[useANSI][9]}│ "     # T row 4
+f"{colorscheme.ANSICodes[useANSI][13]}██{colorscheme.ANSICodes[useANSI][5]}┐\n"  # E row 4
+
+f"   {colorscheme.ANSICodes[useANSI][13]}█{colorscheme.ANSICodes[useANSI][5]}┌┘ "                                                                        # P row 5
+f"{colorscheme.ANSICodes[useANSI][15]}█{colorscheme.ANSICodes[useANSI][7]}┌{colorscheme.ANSICodes[useANSI][15]}█{colorscheme.ANSICodes[useANSI][7]}│"    # A row 5
+f"{colorscheme.ANSICodes[useANSI][14]}█{colorscheme.ANSICodes[useANSI][6]}│  "                                                                           # L row 5
+f"{colorscheme.ANSICodes[useANSI][18]}█{colorscheme.ANSICodes[useANSI][10]}┌┘  "                                                                         # E row 5
+f"{colorscheme.ANSICodes[useANSI][16]}█{colorscheme.ANSICodes[useANSI][8]}│  "                                                                           # T row 5
+f"{colorscheme.ANSICodes[useANSI][17]}█{colorscheme.ANSICodes[useANSI][9]}│ "                                                                            # T row 5
+f"{colorscheme.ANSICodes[useANSI][13]}█{colorscheme.ANSICodes[useANSI][5]}┌┘\n"                                                                          # E row 5
+
+f"   {colorscheme.ANSICodes[useANSI][13]}█{colorscheme.ANSICodes[useANSI][5]}│  "                                                                        # P row 6
+f"{colorscheme.ANSICodes[useANSI][15]}█{colorscheme.ANSICodes[useANSI][7]}│{colorscheme.ANSICodes[useANSI][15]}█{colorscheme.ANSICodes[useANSI][7]}│"    # A row 6
+f"{colorscheme.ANSICodes[useANSI][14]}███{colorscheme.ANSICodes[useANSI][6]}┐"                                                                           # L row 6
+f"{colorscheme.ANSICodes[useANSI][18]}███{colorscheme.ANSICodes[useANSI][10]}┐ "                                                                         # E row 6
+f"{colorscheme.ANSICodes[useANSI][16]}█{colorscheme.ANSICodes[useANSI][8]}│  "                                                                           # T row 6
+f"{colorscheme.ANSICodes[useANSI][17]}█{colorscheme.ANSICodes[useANSI][9]}│ "                                                                            # T row 6
+f"{colorscheme.ANSICodes[useANSI][13]}███{colorscheme.ANSICodes[useANSI][5]}┐\n"                                                                         # E row 6
+
+f"   {colorscheme.ANSICodes[useANSI][5]}└┘  " # P row 7
+f"{colorscheme.ANSICodes[useANSI][7]}└┘└┘"    # A row 7
+f"{colorscheme.ANSICodes[useANSI][6]}└──┘"    # L row 7
+f"{colorscheme.ANSICodes[useANSI][10]}└──┘ "  # E row 7
+f"{colorscheme.ANSICodes[useANSI][8]}└┘  "    # T row 7
+f"{colorscheme.ANSICodes[useANSI][9]}└┘ "     # T row 7
+f"{colorscheme.ANSICodes[useANSI][5]}└──┘"    # E row 7
+
+f"{colorScheme["default"]}"
+              )
 
 str={
     "err_line":" occured on line ",

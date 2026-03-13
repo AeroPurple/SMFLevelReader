@@ -145,6 +145,7 @@ str={
     "te_rep_smf2_start":colorScheme["typeerror"]+"In SMF2, player's start coordinates are stored in entrance data, not the header."+colorScheme["default"],
     "success":colorScheme["success"]+"Success!"+colorScheme["default"],
     "greet_info":"Visit "+colorScheme["link"]+"https://github.com/AeroPurple/SMFLevelReader"+colorScheme["default"]+" to report issues and download updates!",
+    "greet_update":colorScheme["success"]+"Thank you for upgrading to "+colorScheme["command"]+"v{0}!"+colorScheme["default"],
     "greet_intro":"First time? Type in "+colorScheme["command"]+"help"+colorScheme["default"]+" to get the list of commands, or type in "+colorScheme["command"]+"settings"+colorScheme["default"]+" to change how this program works.",
     "greet_ask":"What would you like to do?",
     "conf_ver_title":"Reported config version: ",

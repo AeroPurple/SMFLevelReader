@@ -3663,13 +3663,13 @@ def awaitInput():
             elif testInputMatch(command, False)[2] and not testInputMatch(command, False)[3]:
                 print(strlib["te_attribute"])
 
+clear()
 configLoad()
 try:
     colorScheme=colorscheme.defineColors(useANSI)
 except Exception as e:
     print(e)
     colorschemeMissing=True
-clear()
 if decorType!=0:
     title=" SMF Level Reader v"+versionNames[programVersion]+" "
     length=len(title)
@@ -3682,8 +3682,15 @@ if decorType!=0:
         print(centered_text)
 else:
     print(colorScheme["bold"]+"SMF Level Reader v"+versionNames[programVersion]+colorScheme["default"])
+
 if colorschemeMissing:
     print(strlib["err_color_load"])
+
+if configVersion<programVersion:
+    print(strlib["greet_update"].format(versionNames[programVersion]))
+    configSave(programVersion,titleScreenWaitTime,decorType,useANSI)
+    configLoad()
+
 print(strlib["greet_info"])
 if firstRun:
     print(strlib["greet_intro"])

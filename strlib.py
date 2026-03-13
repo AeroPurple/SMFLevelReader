@@ -42,7 +42,7 @@ versionNames=[0,"0.9","0.10 Beta"]
 fancyVersion=(
  f"{colorscheme.ANSICodes[useANSI][19]}            ╓─╖   ╖ ╓─╖{colorScheme['default']}\n"
  f"         ▌▐ {colorscheme.ANSICodes[useANSI][19]}║ ║   ║ ║ ║{colorScheme['default']}\n"
-f"         \\/ {colorscheme.ANSICodes[useANSI][19]}╙─╜ . ╨ ╙─╜{colorScheme['default']}\n"
+f"         \\/ {colorscheme.ANSICodes[useANSI][19]}╙─╜ . ╨ ╙─╜ ß{colorScheme['default']}\n"
                                                                                                   "\n"
 f"{colorscheme.ANSICodes[useANSI][19]}▐▐ " # left quote
 f"{colorscheme.ANSICodes[useANSI][13]}██{colorscheme.ANSICodes[useANSI][5]}┐ "  # P row 1
